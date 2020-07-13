@@ -1,19 +1,15 @@
-<!--
- * @Author: your name
- * @Date: 2020-06-11 14:06:28
- * @LastEditTime: 2020-07-07 17:08:21
- * @LastEditors: Please set LastEditors
- * @Description: In User Settings Edit
- * @FilePath: \cesium-vue\src\components\dongqu.vue
---> 
-
 <template>
     <div class="map">
-      <div id="cContainer">
+      <div id="cContainer" ref="cesiumMap">
         <div class="camera-info">
           <div>{{currentCamera}}</div>
         </div>
       </div>
+      <div id="tContainer" ref="tianMap"></div>
+      <div v-if="mapInited">
+        <ModeSwitcher2 @getSceneMode="getSceneMode"></ModeSwitcher2>
+      </div>
+      
       <div class="control-button">
         <el-radio-group v-model="layer" @change="getCompLayer">
           <el-radio-button label="人员" size="mini"></el-radio-button>
@@ -400,12 +396,15 @@
     </div>   
 </template>
 <script>
-import 'cesium/Widgets/widgets.css';
-let Cesium = require('cesium/Cesium')
+import 'cesium/Source/Widgets/widgets.css';
+let Cesium = require('cesium/Source/Cesium')
+import CesiumNavigation from 'cesium-navigation-es6'
 require('../../static/libs/cesium/cesiumGeometry')
 const qs = require('qs')
-// let Cesium = require('../../static/libs/cesium/ellipsoidFadeMarterialProperty')
-import compData from '../../static/SampleData/comp.json'
+import common from '../uitl/common'
+// 部件数据
+import compData from '../../static/SampleData/comp.json' 
+// 三维模型
 import shu from '../../static/3dModel/shu.gltf'
 import lajitongStreet from '../../static/3dModel/comp/lajitong_street.gltf'
 import lajitongBusiness from '../../static/3dModel/comp/lajitong_business.gltf'
@@ -425,15 +424,20 @@ import jgQita from '../../static/3dModel/comp/jinggai_qita.gltf'
 import huajiaBase from '../../static/3dModel/comp/huajia_base.gltf'
 import huajiaTree from '../../static/3dModel/comp/huajia_tree.gltf'
 import yushuibizi from '../../static/3dModel/comp/yushuibizi.gltf'
-import common from '../uitl/common'
+// 组件
+import ModeSwitcher from './tool/modeSwitcher'
+import ModeSwitcher2 from './tool/modeSwitcher2'
 
 export default {
   components: {
-    
+    ModeSwitcher,
+    ModeSwitcher2
   },
   data () {
     return {
       viewer: '',
+      tMap: '',
+      mapInited: false,
       windowPosition: '',
       entityDatasource: null,
       primitiveCollection: null,
@@ -479,12 +483,15 @@ export default {
         },
         duration: 2
       },
-      carPassPath: []
+      carPassPath: [],
+      sceneMode: '' // 维度模式
     }
   },
   mounted () {
     this.initUserInfo()
     this.initViewer()
+    this.initTMap()
+    this.mapInited = true
     let self = this;
     window.mapVue = self;
     window["getCompLayer"] = (type) => {
@@ -556,12 +563,33 @@ export default {
       // 禁止相机进入地面以下
       this.viewer.scene.preRender.addEventListener(this.undergroundMode)
       
+      // 添加指南针
+      var options = {
+        defaultResetView: Cesium.Rectangle.fromDegrees(90, 5, 130, 60), // 用于在使用重置导航重置地图视图时设置默认视图控制。接受的值是Cesium.Cartographic 和 Cesium.Rectangle.
+        enableCompass: true, // 用于启用或禁用罗盘。true是启用罗盘，false是禁用罗盘。默认值为true。如果将选项设置为false，则罗盘将不会添加到地图中。
+        enableZoomControls: true, // 用于启用或禁用缩放控件。true是启用，false是禁用。默认值为true。如果将选项设置为false，则缩放控件将不会添加到地图中。
+        enableDistanceLegend: false, // 用于启用或禁用距离图例。true是启用，false是禁用。默认值为true。如果将选项设置为false，距离图例将不会添加到地图中。
+        enableCompassOuterRing: true // 用于启用或禁用指南针外环。true是启用，false是禁用。默认值为true。如果将选项设置为false，则该环将可见但无效。
+      }
+      CesiumNavigation(this.viewer, options)
+
       // this.addCBasicMap()
       this.addCSitelliteMap()
       this.getCurrentCamera()
       this.directLocation()
       this.addCustomMap()
       this.load3DTile()
+    },
+    /**
+     * @description: 初始化天地图矢量地图
+     * @param {type} 
+     * @return: 
+     */
+    initTMap () {
+      this.tMap = new T.Map('tContainer', {
+        center: new T.LngLat(116.40769, 39.89945),
+        zoom: 12
+      })
     },
     /**
      * @description: 直接定位至目标区域
@@ -988,7 +1016,6 @@ export default {
         dataSources.add(ds)
         this.addPointInLayer(type, ds)
       }
-      
     },
     /**
      * @description: 根据类型请求数据并打点（到对应图层），缩放到图层点的范围
@@ -1026,7 +1053,6 @@ export default {
         })
       } else if ( type === 'video' ) {
         this.requestVideoData().then( points => {
-          console.log(points)
           points && points.length > 0 &&
           points.forEach( item => {
             item.isOnline === 1 ? this.addBillboard(item, img.video.online, ds, type) :
@@ -1073,7 +1099,7 @@ export default {
           image: url,
           horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          scale: 1.5,  //scale>1在自身大小的基础上翻倍，为-1时倒置
+          scale: 1,  //scale>1在自身大小的基础上翻倍，为-1时倒置
         }
       })
       entity.property = item 
@@ -1171,7 +1197,7 @@ export default {
         let picked = viewer.scene.pick(e.position)
         if (Cesium.defined(this.select.feature)) {
           this.infoBoxVisible = false
-          this.select.feature.color = this.select.originalColor
+          // this.select.feature.color = this.select.originalColor
           this.select.feature = undefined
         }
         if (Cesium.defined(this.selectModel)) {
@@ -1182,13 +1208,14 @@ export default {
           this.selectEntity = undefined
         }
         
+        
         if (Cesium.defined(picked)) {
           let matrix, cartesian3, lnglat
           if (picked instanceof Cesium.Cesium3DTileFeature) {
             this.select.feature = picked
             matrix = this.select.feature.content._model.modelMatrix
-            Cesium.Color.clone(picked.color, this.select.originalColor)
-            picked.color = Cesium.Color.YELLOW
+            // Cesium.Color.clone(picked.color, this.select.originalColor)
+            // picked.color = Cesium.Color.YELLOW
             let cartesian3 = new Cesium.Cartesian3(matrix[12], matrix[13], matrix[14])
             this.initInfobox(cartesian3)
             let param = {
@@ -1271,15 +1298,15 @@ export default {
               this.infoBoxVisible = this.infoBoxVisible || true
             }
 
-            lnglat = this.cartesian2Wgs84(cartesian3)
-            viewer.camera.setView({
-              destination: Cesium.Cartesian3.fromDegrees(lnglat.lng, lnglat.lat-0.0015, lnglat.alt + 200),
-              orientation: {
-                heading: Cesium.Math.toRadians(0),
-                pitch: Cesium.Math.toRadians(-45.11690269384763),
-                roll: Cesium.Math.toRadians(0)
-              }
-            })
+            // lnglat = this.cartesian2Wgs84(cartesian3)
+            // viewer.camera.setView({
+            //   destination: Cesium.Cartesian3.fromDegrees(lnglat.lng, lnglat.lat-0.0015, lnglat.alt + 200),
+            //   orientation: {
+            //     heading: Cesium.Math.toRadians(0),
+            //     pitch: Cesium.Math.toRadians(-45.11690269384763),
+            //     roll: Cesium.Math.toRadians(0)
+            //   }
+            // })
           }
         } else {
           this.infoBoxVisible = false
@@ -1380,21 +1407,71 @@ export default {
      */
     addPoint(cartesian) {
       const viewer = this.viewer
-      return viewer.entities.add({
+      let entity
+      if (this.sceneMode === '3d') {
+        entity = viewer.entities.add({
+          name: '登记点',
+          position: cartesian,
+          ellipse: {
+            semiMinorAxis: 100,
+            semiMajorAxis: 100,
+            heightReference: Cesium.HeightReference.NONE,
+            material: new Cesium.CircleWaveMaterialProperty({
+              duration: 2e3,
+              gradient: 0,
+              color: Cesium.Color.fromCssColorString('#FF0000'),
+              count: 2
+            })
+          }
+        })
+      } else {
+        entity = this.dynamicDiffusion2d({
+          step: 1,
+          maxR: 100,
+          cartesian: cartesian,  // 注意：这里是世界坐标
+          height: 0,
+          imgUrl: require('../../static/images/redCircle2.png'),
+          eachInterval: 700,
+        })
+      }
+      return entity
+    },
+    dynamicDiffusion2d (param) {
+      
+      // 添加外层扩散圆
+      let r1 = 0, count1 = 1
+      function _changeR1 () {
+        r1 = r1 + param.step
+        if (r1 >= param.maxR) {
+          r1 = 0
+          count1 += 1
+        }
+        return r1
+      }
+      
+      return this.viewer.entities.add({
         name: '登记点',
-        position: cartesian,
+        position: param.cartesian,
+        show: true,
         ellipse: {
-          semiMinorAxis: 100,
-          semiMajorAxis: 100,
-          heightReference: Cesium.HeightReference.NONE,
-          material: new Cesium.CircleWaveMaterialProperty({
-            duration: 2e3,
-            gradient: 0,
-            color: Cesium.Color.fromCssColorString('#FF0000'),
-            count: 2
+          semiMinorAxis: new Cesium.CallbackProperty(_changeR1, false),
+          semiMajorAxis: new Cesium.CallbackProperty(_changeR1, false),
+          heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+          height: param.height,
+          material: new Cesium.ImageMaterialProperty({
+            image: param.imgUrl,
+            repeat:new Cesium.Cartesian2(1.0, 1.0),
+            transparent: false,
+            color: new Cesium.CallbackProperty(function () {
+              if (count1 == 1) {
+                return Cesium.Color.WHITE.withAlpha(0)
+              }
+              let alp = 1 - r1/ param.maxR
+              return Cesium.Color.WHITE.withAlpha(alp)
+            }, false)
           })
         }
-      })
+      })  
     },
     /**
      * @description: 登记案件--点可拖拽
@@ -1414,7 +1491,9 @@ export default {
         leftDownDrag = true
         if (!pointDraged) return
         if (pointDraged.id && pointDraged.id.name === '登记点') {
-          viewer.scene.screenSpaceCameraController.enableRotate = false
+          this.sceneMode === '3d' ? viewer.scene.screenSpaceCameraController.enableRotate = false :
+                                    viewer.scene.screenSpaceCameraController.enableTranslate = false
+          
         }
       }, Cesium.ScreenSpaceEventType.LEFT_DOWN)
 
@@ -1442,7 +1521,8 @@ export default {
           })
         leftDownDrag = false
         pointDraged = null
-        viewer.scene.screenSpaceCameraController.enableRotate = true
+        this.sceneMode === '3d' ? viewer.scene.screenSpaceCameraController.enableRotate = true :
+                                    viewer.scene.screenSpaceCameraController.enableTranslate = true
         // this.handler.destroy()
       }, Cesium.ScreenSpaceEventType.LEFT_UP)
 
@@ -1995,23 +2075,39 @@ export default {
         interpolationDegree: 1,
         interpolationAlgorithm: Cesium.LagrangePolynomialApproximation
       })
-
-      moveEntity = viewer.entities.add({
-        name: 'move-person',
-        id: 'move-person',
-        availability: new Cesium.TimeIntervalCollection([
-          new Cesium.TimeInterval({start: start, stop: stop})
-        ]),
-        position: positionProperty,
-        orientation: new Cesium.VelocityOrientationProperty(positionProperty),
-        viewFrom: new Cesium.Cartesian3(-100, -100, 200),
-        model: {
-          uri: man,
-          scale: 10,
-          minimumPixelSize: 64,
-          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
-        }
-      })
+      
+      moveEntity = this.sceneMode === '3d' ? 
+        viewer.entities.add({
+          name: 'move-person',
+          id: 'move-person',
+          availability: new Cesium.TimeIntervalCollection([
+            new Cesium.TimeInterval({start: start, stop: stop})
+          ]),
+          position: positionProperty,
+          orientation: new Cesium.VelocityOrientationProperty(positionProperty),
+          viewFrom: new Cesium.Cartesian3(-100, -100, 200),
+          model: {
+            uri: man,
+            scale: 10,
+            minimumPixelSize: 64,
+            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
+          }
+        }) :
+        viewer.entities.add({
+          name: 'move-person',
+          id: 'move-person',
+          availability: new Cesium.TimeIntervalCollection([
+            new Cesium.TimeInterval({start: start, stop: stop})
+          ]),
+          position: positionProperty,
+          orientation: new Cesium.VelocityOrientationProperty(positionProperty),
+          billboard: {
+            image: require('../../static/images/car.png'),
+            horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            scale: 1,
+          }
+        })
       
       viewer.trackedEntity = moveEntity
       this.animationControl("forward")
@@ -2102,6 +2198,14 @@ export default {
     personTrackClose () {
       this.personTrackVisible = false
       this.handleClose()
+    },
+    /**
+     * @description: 获取子组件modeSwitcher的底图维度
+     * @param {type} 
+     * @return: 
+     */
+    getSceneMode (val) {
+      this.sceneMode = val
     },
     getTips (startTime, endTime) {
       const secondesOfTwoDay = 24 * 60 * 60 * 1000 * 2 // 两天时间的毫秒数
@@ -2276,11 +2380,16 @@ export default {
   width: 100%;
   height: 100%;
 }
+#tContainer {
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
 .control-button {
   position: absolute;
   left: 10px;
   top: 10px;
-  display: none;   /* 打包时显示 */
+/*  display: none;  打包时显示 */
 }
 .camera-info {
   position: absolute;
@@ -2385,7 +2494,15 @@ export default {
 .custom_box .footer {
   text-align: center;
   margin-top: 10px;
-
 }
 </style>
 
+<style>
+/* 指北针样式 */
+.compass {
+  top: 50px;
+}
+.navigation-controls {
+  top: 140px;
+}
+</style>

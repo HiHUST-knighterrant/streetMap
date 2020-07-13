@@ -1,12 +1,12 @@
 /*
  * @Author: zhaoqian
  * @Date: 2020-05-21 14:09:13
- * @LastEditTime: 2020-06-16 11:43:46
+ * @LastEditTime: 2020-07-08 16:44:41
  * @LastEditors: Please set LastEditors
  * @Description:  圆形动态扩散波纹
  * @FilePath: \cesium-vue\static\libs\cesium\ellipsoidFadeMarterialProperty.js
  */ 
-let Cesium = require('cesium/Cesium')
+let Cesium = require('cesium/Source/Cesium')
 
 
 function EllipsoidFadeMaterialProperty(color, duration) {

@@ -1,13 +1,13 @@
 /*
  * @Author: zhaoqian
  * @Date: 2020-06-16 10:59:41
- * @LastEditTime: 2020-06-22 14:02:33
+ * @LastEditTime: 2020-07-08 16:44:54
  * @LastEditors: Please set LastEditors
  * @Description: In User Settings Edit
  * @FilePath: \cesium-vue\static\libs\cesium\circleWaveMaterialProperty.js
  */ 
 
-let Cesium = require('cesium/Cesium');
+let Cesium = require('cesium/Source/Cesium');
 function CircleWaveMaterialProperty (options) {
   options = Cesium.defaultValue(options, Cesium.defaultValue.EMPTY_OBJECT);
   this._definitionChanged = new Cesium.Event();

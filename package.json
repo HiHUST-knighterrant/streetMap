@@ -13,6 +13,7 @@
     "ajv": "^6.9.1",
     "axios": "^0.19.2",
     "cesium": "^1.64.0",
+    "cesium-navigation-es6": "^1.1.6",
     "element-ui": "^2.4.9",
     "image-webpack-loader": "^6.0.0",
     "less": "^3.9.0",
