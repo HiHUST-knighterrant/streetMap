@@ -26,7 +26,7 @@ function CircleWaveMaterialProperty (options) {
   this._time = performance.now()
 }
 
-Cesium.defineProperties(CircleWaveMaterialProperty.prototype, {
+Object.defineProperties(CircleWaveMaterialProperty.prototype, {
   isConstant: {
     get: function () {
         return false

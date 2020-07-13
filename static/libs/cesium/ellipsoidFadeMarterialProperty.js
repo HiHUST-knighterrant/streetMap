@@ -17,7 +17,7 @@ function EllipsoidFadeMaterialProperty(color, duration) {
   this.duration = duration;
   this._time = (new Date()).getTime();
 }
-Cesium.defineProperties(EllipsoidFadeMaterialProperty.prototype, {
+Object.defineProperties(EllipsoidFadeMaterialProperty.prototype, {
     isConstant: {
         get: function () {
             return false

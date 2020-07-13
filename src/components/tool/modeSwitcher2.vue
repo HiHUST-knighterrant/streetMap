@@ -40,6 +40,11 @@ export default {
       if (action === '3d') {
         this.$parent.tileset.show = true
         this.$emit("getSceneMode", '3d')
+        // 显示影像图
+        this.$parent.sitelliteMap.show = true
+        this.$parent.customMap.show = true
+        this.$parent.labelMap.show = false
+        this.$parent.vectorMap.show = false
         command = this.sceneModePicker.viewModel.morphTo3D
       } else if (action === '2d') {
         this.$parent.tileset.show = false
@@ -49,6 +54,11 @@ export default {
           destination: Cesium.Rectangle.fromDegrees(extent.west, extent.south, extent.east, extent.north)
         })
         this.$emit("getSceneMode", '2d')
+        // 显示天地图矢量地图
+        this.$parent.vectorMap.show = true
+        this.$parent.labelMap.show = true
+        this.$parent.sitelliteMap.show = false
+        this.$parent.customMap.show = false
         command = this.sceneModePicker.viewModel.morphTo2D
       }
       if (command.canExecute) {

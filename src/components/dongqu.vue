@@ -8,6 +8,7 @@
       <div id="tContainer" ref="tianMap"></div>
       <div v-if="mapInited">
         <ModeSwitcher2 @getSceneMode="getSceneMode"></ModeSwitcher2>
+        <!-- <BasemapSwitcher></BasemapSwitcher> -->
       </div>
       
       <div class="control-button">
@@ -427,16 +428,22 @@ import yushuibizi from '../../static/3dModel/comp/yushuibizi.gltf'
 // 组件
 import ModeSwitcher from './tool/modeSwitcher'
 import ModeSwitcher2 from './tool/modeSwitcher2'
+import BasemapSwitcher from './tool/basemapSwitcher'
 
 export default {
   components: {
     ModeSwitcher,
-    ModeSwitcher2
+    ModeSwitcher2,
+    BasemapSwitcher
   },
   data () {
     return {
       viewer: '',
       tMap: '',
+      sitelliteMap: '',
+      vectorMap: '',
+      customMap: '',
+      labelMap: '',
       mapInited: false,
       windowPosition: '',
       entityDatasource: null,
@@ -572,13 +579,15 @@ export default {
         enableCompassOuterRing: true // 用于启用或禁用指南针外环。true是启用，false是禁用。默认值为true。如果将选项设置为false，则该环将可见但无效。
       }
       CesiumNavigation(this.viewer, options)
+      this.getCurrentCamera()
 
       // this.addCBasicMap()
       this.addCSitelliteMap()
-      this.getCurrentCamera()
+      this.addCVectorMap()
       this.directLocation()
       this.addCustomMap()
       this.load3DTile()
+      console.log(this.viewer.imageryLayers)
     },
     /**
      * @description: 初始化天地图矢量地图
@@ -616,7 +625,7 @@ export default {
      * @return: 
      */
     addCSitelliteMap () {
-      let basemap = new Cesium.ImageryLayer(new Cesium.WebMapTileServiceImageryProvider({
+      this.sitelliteMap = new Cesium.ImageryLayer(new Cesium.WebMapTileServiceImageryProvider({
           url: 'http://{s}.google.cn/vt?lyrs=s&x={TileCol}&y={TileRow}&z={TileMatrix}&s=Gali',
           layer: 'googleSitelliteMap',
           style: 'default',
@@ -633,7 +642,46 @@ export default {
         saturation: 1.44,
         gamma: 0.68
       })
-      this.viewer.imageryLayers.add(basemap);
+      this.sitelliteMap.title = 'sitelliteMap'
+      this.viewer.imageryLayers.add(this.sitelliteMap)
+    },
+    /**
+     * @description: 默认添加天地图矢量地图
+     * @param {type} 
+     * @return: 
+     */
+    addCVectorMap () {
+      this.vectorMap = new Cesium.ImageryLayer(new Cesium.WebMapTileServiceImageryProvider({
+        url: 'http://t{s}.tianditu.gov.cn/vec_c/wmts?service=wmts&request=GetTile&version=1.0.0&LAYER=vec&tileMatrixSet=c&TileMatrix={TileMatrix}&TileRow={TileRow}&TileCol={TileCol}&style=default&format=tiles&tk=76892c38deab957e65556e5824ca53e9',
+        layer: 'tianMap',
+        style: 'default',
+        format: 'tiles',
+        tileMatrixSetID: 'c',
+        subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+        tilingScheme: new Cesium.GeographicTilingScheme(),
+        tileMatrixLabels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19'],
+        maximumLevel: 18
+      }), {
+        show: false
+      })
+      this.vectorMap.title = 'vectorMap'
+      this.viewer.imageryLayers.add(this.vectorMap)
+      this.labelMap = new Cesium.ImageryLayer(new Cesium.WebMapTileServiceImageryProvider({
+        url: 'http://t{s}.tianditu.gov.cn/cva_c/wmts?service=wmts&request=GetTile&version=1.0.0&LAYER=cva&tileMatrixSet=c&TileMatrix={TileMatrix}&TileRow={TileRow}&TileCol={TileCol}&style=default&format=tiles&tk=76892c38deab957e65556e5824ca53e9',
+        layer: 'tianLabelMap',
+        style: 'default',
+        format: 'tiles',
+        tileMatrixSetID: 'c',
+        subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+        tilingScheme: new Cesium.GeographicTilingScheme(),
+        tileMatrixLabels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19'],
+        maximumLevel: 18
+      }), {
+        show: false
+      }) 
+      this.labelMap.title = 'labelMap'
+      this.viewer.imageryLayers.add(this.labelMap)
+      console.log(this.labelMap)
     },
     /**
      * @description: 添加自定义的影像图
@@ -641,7 +689,7 @@ export default {
      * @return: 
      */
     addCustomMap () {
-      let customMap = new Cesium.ImageryLayer(new Cesium.WebMapServiceImageryProvider({
+      this.customMap = new Cesium.ImageryLayer(new Cesium.WebMapServiceImageryProvider({
         url: 'http://117.159.25.220:8081/geoserver/districts/wms',
         layers: 'districts:basemap',
         parameters: {
@@ -656,7 +704,8 @@ export default {
       }), {
         show: true
       })
-      this.viewer.imageryLayers.add(customMap);
+      this.customMap.title = 'customMap'
+      this.viewer.imageryLayers.add(this.customMap);
     },
     /**
      * @description: 设置地下浏览模式
@@ -2075,7 +2124,7 @@ export default {
         interpolationDegree: 1,
         interpolationAlgorithm: Cesium.LagrangePolynomialApproximation
       })
-      
+
       moveEntity = this.sceneMode === '3d' ? 
         viewer.entities.add({
           name: 'move-person',
@@ -2086,6 +2135,7 @@ export default {
           position: positionProperty,
           orientation: new Cesium.VelocityOrientationProperty(positionProperty),
           viewFrom: new Cesium.Cartesian3(-100, -100, 200),
+          // viewFrom: new Cesium.Cartesian3(-16000, -16000, 14000),
           model: {
             uri: man,
             scale: 10,
