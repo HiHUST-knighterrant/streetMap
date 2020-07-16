@@ -37,28 +37,43 @@ export default {
   methods: {
     sceneModeControl (action) {
       let command
+      let primitives = this.$parent.viewer.scene.primitives._primitives
       if (action === '3d') {
-        this.$parent.tileset.show = true
-        this.$emit("getSceneMode", '3d')
+        // 三维模型隐藏
+        // this.$parent.tileset.show = true
+        primitives.forEach(item => {
+          if (item instanceof Cesium.ModelInstanceCollection) {
+            item.show = true
+          }
+        })
         // 显示影像图
         this.$parent.sitelliteMap.show = true
         this.$parent.customMap.show = true
         this.$parent.labelMap.show = false
         this.$parent.vectorMap.show = false
         command = this.sceneModePicker.viewModel.morphTo3D
+        // 显示三维指南针
+        document.getElementById('navigationDiv').style.display = 'block'
       } else if (action === '2d') {
-        this.$parent.tileset.show = false
+        // 三维模型隐藏
+        // this.$parent.tileset.show = false
+        primitives.forEach(item => {
+          if (item instanceof Cesium.ModelInstanceCollection) {
+            item.show = false
+          }
+        })
         // 切换二维时保证视图范围大致一致
         let extent = this.get3DExtent()
         this.$parent.viewer.camera.setView({
           destination: Cesium.Rectangle.fromDegrees(extent.west, extent.south, extent.east, extent.north)
         })
-        this.$emit("getSceneMode", '2d')
         // 显示天地图矢量地图
         this.$parent.vectorMap.show = true
         this.$parent.labelMap.show = true
         this.$parent.sitelliteMap.show = false
         this.$parent.customMap.show = false
+        // 隐藏三维指南针
+        document.getElementById('navigationDiv').style.display = 'none'
         command = this.sceneModePicker.viewModel.morphTo2D
       }
       if (command.canExecute) {

@@ -7,7 +7,7 @@
       </div>
       <div id="tContainer" ref="tianMap"></div>
       <div v-if="mapInited">
-        <ModeSwitcher2 @getSceneMode="getSceneMode"></ModeSwitcher2>
+        <ModeSwitcher2></ModeSwitcher2>
         <!-- <BasemapSwitcher></BasemapSwitcher> -->
       </div>
       
@@ -579,6 +579,9 @@ export default {
         enableCompassOuterRing: true // 用于启用或禁用指南针外环。true是启用，false是禁用。默认值为true。如果将选项设置为false，则该环将可见但无效。
       }
       CesiumNavigation(this.viewer, options)
+      // 修改指南针的样式
+      document.getElementsByClassName('navigation-controls')[0].style.backgroundColor = 'rgba(47, 53, 60, 0.5)'
+
       this.getCurrentCamera()
 
       // this.addCBasicMap()
@@ -587,7 +590,6 @@ export default {
       this.directLocation()
       this.addCustomMap()
       this.load3DTile()
-      console.log(this.viewer.imageryLayers)
     },
     /**
      * @description: 初始化天地图矢量地图
@@ -681,7 +683,6 @@ export default {
       }) 
       this.labelMap.title = 'labelMap'
       this.viewer.imageryLayers.add(this.labelMap)
-      console.log(this.labelMap)
     },
     /**
      * @description: 添加自定义的影像图
@@ -1002,7 +1003,6 @@ export default {
       // 便道桩
       // let barBdzCollection = this.createInstanceCollection(barBdz, barBdzInstances) // 柱形便道桩
       // let sphereCollection = this.createInstanceCollection(sphereBdz, sphereBdzInstances) // 球形便道桩
-
     },
     createInstanceCollection (model, instances, lightFlag) {
       if (lightFlag === undefined) lightFlag = true
@@ -1021,6 +1021,8 @@ export default {
      */
     getCompLayer (type) {
       this.infoBoxVisible = false
+      this.carInfoVisible = false
+      this.carTrackVisible = false
       this.$el.style.cursor = 'default'
       this.viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
       
@@ -1456,71 +1458,27 @@ export default {
      */
     addPoint(cartesian) {
       const viewer = this.viewer
-      let entity
-      if (this.sceneMode === '3d') {
-        entity = viewer.entities.add({
-          name: '登记点',
-          position: cartesian,
-          ellipse: {
-            semiMinorAxis: 100,
-            semiMajorAxis: 100,
-            heightReference: Cesium.HeightReference.NONE,
-            material: new Cesium.CircleWaveMaterialProperty({
-              duration: 2e3,
-              gradient: 0,
-              color: Cesium.Color.fromCssColorString('#FF0000'),
-              count: 2
-            })
-          }
-        })
-      } else {
-        entity = this.dynamicDiffusion2d({
-          step: 1,
-          maxR: 100,
-          cartesian: cartesian,  // 注意：这里是世界坐标
-          height: 0,
-          imgUrl: require('../../static/images/redCircle2.png'),
-          eachInterval: 700,
-        })
-      }
-      return entity
-    },
-    dynamicDiffusion2d (param) {
-      
-      // 添加外层扩散圆
-      let r1 = 0, count1 = 1
-      function _changeR1 () {
-        r1 = r1 + param.step
-        if (r1 >= param.maxR) {
-          r1 = 0
-          count1 += 1
-        }
-        return r1
-      }
-      
-      return this.viewer.entities.add({
+      let option = {
         name: '登记点',
-        position: param.cartesian,
-        show: true,
+        position: cartesian,
         ellipse: {
-          semiMinorAxis: new Cesium.CallbackProperty(_changeR1, false),
-          semiMajorAxis: new Cesium.CallbackProperty(_changeR1, false),
-          heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
-          height: param.height,
-          material: new Cesium.ImageMaterialProperty({
-            image: param.imgUrl,
-            repeat:new Cesium.Cartesian2(1.0, 1.0),
-            transparent: false,
-            color: new Cesium.CallbackProperty(function () {
-              if (count1 == 1) {
-                return Cesium.Color.WHITE.withAlpha(0)
-              }
-              let alp = 1 - r1/ param.maxR
-              return Cesium.Color.WHITE.withAlpha(alp)
-            }, false)
+          semiMinorAxis: 100,
+          semiMajorAxis: 100,
+          material: new Cesium.CircleWaveMaterialProperty({
+            duration: 2e3,
+            gradient: 0,
+            color: Cesium.Color.fromCssColorString('#FF0000'),
+            count: 2
           })
         }
-      })  
+      }
+      if (this.viewer.scene.mode === Cesium.SceneMode.SCENE3D) {
+        option.ellipse.heightReference = Cesium.HeightReference.NONE
+      } else {
+        option.ellipse.heightReference = Cesium.HeightReference.RELATIVE_TO_GROUND
+        option.ellipse.height = 5
+      }
+      return viewer.entities.add(option)
     },
     /**
      * @description: 登记案件--点可拖拽
@@ -1540,8 +1498,8 @@ export default {
         leftDownDrag = true
         if (!pointDraged) return
         if (pointDraged.id && pointDraged.id.name === '登记点') {
-          this.sceneMode === '3d' ? viewer.scene.screenSpaceCameraController.enableRotate = false :
-                                    viewer.scene.screenSpaceCameraController.enableTranslate = false
+          this.viewer.scene.mode === Cesium.SceneMode.SCENE3D ? viewer.scene.screenSpaceCameraController.enableRotate = false :
+                                                                viewer.scene.screenSpaceCameraController.enableTranslate = false
           
         }
       }, Cesium.ScreenSpaceEventType.LEFT_DOWN)
@@ -1570,8 +1528,8 @@ export default {
           })
         leftDownDrag = false
         pointDraged = null
-        this.sceneMode === '3d' ? viewer.scene.screenSpaceCameraController.enableRotate = true :
-                                    viewer.scene.screenSpaceCameraController.enableTranslate = true
+        this.viewer.scene.mode === Cesium.SceneMode.SCENE3D ? viewer.scene.screenSpaceCameraController.enableRotate = true :
+                                                              viewer.scene.screenSpaceCameraController.enableTranslate = true
         // this.handler.destroy()
       }, Cesium.ScreenSpaceEventType.LEFT_UP)
 
@@ -1792,7 +1750,6 @@ export default {
       const viewer = this.viewer
       
       let path = this.carPathData
-
       let start = Cesium.JulianDate.fromDate(new Date(path[0].uploadTime))
       let stop = Cesium.JulianDate.addSeconds(start, path.length, new Cesium.JulianDate())
       
@@ -1809,25 +1766,22 @@ export default {
         this.animationControl("forward")
         return
       }
-
       let positionProperty = new Cesium.SampledPositionProperty()
       let speedProperty = new Cesium.SampledProperty(Number)
       let directionProperty = new Cesium.SampledProperty(Number)
       // let distanceProperty = new Cesium.SampledProperty(Number)
       for (let i = 0; i< path.length; i++) {
-        let time = Cesium.JulianDate.addSeconds(start, i , new Cesium.JulianDate())
+        let time = Cesium.JulianDate.addSeconds(start, i, new Cesium.JulianDate())
         let position = Cesium.Cartesian3.fromDegrees(path[i].longitude, path[i].latitude)
         positionProperty.addSample(time, position)
         speedProperty.addSample(time, path[i].speed)
         directionProperty.addSample(time, path[i].direction)
         // distanceProperty.addSample(time, path[i].gpsDistance)
       }
-
       positionProperty.setInterpolationOptions({
         interpolationDegree: 1,
         interpolationAlgorithm: Cesium.LinearApproximation
       })
-
       moveEntity = viewer.entities.add({
         name: 'move-car',
         id: 'move-car',
@@ -1850,42 +1804,13 @@ export default {
         })
       })
       
-      viewer.trackedEntity = moveEntity
+      // viewer.trackedEntity = moveEntity
       this.animationControl('forward')
 
-      
-      let _this = this
-      // let passLinePrimitive = (function () {
-      //   function _(positions) {
-      //     this.options = {
-      //       id: 'CarPassPath',
-      //       polyline: {
-      //         show: true,
-      //         positions: [],
-      //         material: Cesium.Color.fromCssColorString('#2f25ff'),
-      //         width: 4,
-      //         clampToGround: true
-      //       }
-      //     }
-      //     this.positions = positions
-      //     this._init()
-      //   }
-
-      //   _.prototype._init = function () {
-      //     let _self = this
-      //     let _update = function () {
-      //       return _self.positions
-      //     }
-      //     this.options.polyline.positions = new Cesium.CallbackProperty(_update, false)
-      //     _this.viewer.entities.add(this.options)
-      //   }
-
-      //   return _
-      // })()
       let passPath = []
       let previousTime = moveEntity.position.getValue(viewer.clock.currentTime)
       passPath.push(Cesium.Cartesian3.fromDegrees(path[0].longitude, path[0].latitude))
-      // let pathLine = new passLinePrimitive(passPath)
+      let _this = this
       let passLineEntity = viewer.entities.add({
         id: 'CarPassPath',
         polyline: {
@@ -1893,23 +1818,23 @@ export default {
           positions: new Cesium.CallbackProperty( (time, result) => {
             // 实时更新车的已走路径
             let floatCartesian = moveEntity.position.getValue(time)
-            if (floatCartesian) {
-              _this.playFlag = true
-              if (time.secondsOfDay >= previousTime.secondsOfDay) {
-                if (floatCartesian) {
-                  passPath.push(floatCartesian)
-                } else {
-                  passPath = []
-                  passPath.push(Cesium.Cartesian3.fromDegrees(path[0].longitude, path[0].latitude))
-                  _this.playFlag = false
-                }
+            _this.playFlag = true
+            if (time.secondsOfDay >= previousTime.secondsOfDay) {
+              if (floatCartesian) {
+                passPath.push(floatCartesian)
               } else {
-                if (passPath.length >= 1) {
-                  passPath.splice(passPath.length-1, 1)
-                } else {
-                  passPath = []
-                  _this.playFlag = false
-                }
+                passPath = []
+                passPath.length = 0
+                passPath.push(Cesium.Cartesian3.fromDegrees(path[0].longitude, path[0].latitude))
+                _this.playFlag = false
+              }
+            } else {
+              if (passPath.length >= 1) {
+                passPath.splice(passPath.length-1, 1)
+              } else {
+                passPath = []
+                passPath.length = 0
+                _this.playFlag = false
               }
             }
             
@@ -1927,14 +1852,15 @@ export default {
         // // 实时更新车的已走路径 ================= 未完成
         // let currentTime = viewer.clock.currentTime.secondsOfDay
         // let floatCartesian = moveEntity.position.getValue(currentTime)
-        // if (currentTime > previousTime) {
+        // console.log(currentTime)
+        // if (currentTime >= previousTime) {
         //   if (floatCartesian) {
         //     passPath.push(floatCartesian)
         //   } else {
         //     passPath = []
         //     passPath.push(Cesium.Cartesian3.fromDegrees(path[0].longitude, path[0].latitude))
         //   }
-        // } else if (currentTime < previousTime) {
+        // } else {
         //   if (passPath.length >= 1) {
         //     passPath.splice(passPath.length-1, 1)
         //   } else {
@@ -1942,10 +1868,11 @@ export default {
         //   }
         // }
         // previousTime = currentTime
-
+        // passLineEntity.polyline.positions = passPath
+        
         // 得到实时的车速、车的方向
-        let carSpeed = moveEntity.properties.speed.getValue(viewer.clock.currentTime).toFixed(2)
-        let carDirection = moveEntity.properties.direction.getValue(viewer.clock.currentTime).toFixed(2)
+        let carSpeed = moveEntity.properties.speed.getValue(viewer.clock.currentTime)
+        let carDirection = moveEntity.properties.direction.getValue(viewer.clock.currentTime)
         // let carDistance =  moveEntity.properties.distance.getValue(currentTime).toFixed(2)
         // 向父页面传递车速、方向
         window.parent.popHome.updateCarMeterInfo(carSpeed, carDirection) // 打包时显示
@@ -1956,7 +1883,6 @@ export default {
         // carMoveInfoBox.style.left = wp.x + "px"
         // carMoveInfoBox.style.top = wp.y + "px"
         // carMoveInfoBox.textContent = `速度：${carSpeed}, 方向：${carDirection}, 行驶里程：${carDistance}`
-
       })
       
     },
@@ -1969,7 +1895,7 @@ export default {
         // 重新开始播放
         this.carPathPlay(speed)
       } else {
-        this.animationControl('forward')
+        this.carPathPlay()
       }
     },
     // 车辆轨迹--重新播放
@@ -1981,7 +1907,7 @@ export default {
         // 重新开始播放
         this.carPathPlay()
       } else {
-        this.animationControl('forward')
+        this.carPathPlay()
       }
     },
     // 车辆轨迹--退出播放
@@ -2014,12 +1940,12 @@ export default {
     },
     fastBack () {
       this.animationControl('reverse')
-      this.animationControl('faster')
+      // this.animationControl('faster')
     },
     handleClose (flag) {
       const viewer = this.viewer
       if (viewer.entities) {
-
+        
         const entityIds = flag === 'replay' ? 
                           ['move-person','PersonPassPath', 'move-car', 'CarPassPath'] :
                           ['PersonFullPath', 'move-person','PersonPassPath', 'CarFullPath', 'move-car', 'CarPassPath']
@@ -2125,41 +2051,33 @@ export default {
         interpolationAlgorithm: Cesium.LagrangePolynomialApproximation
       })
 
-      moveEntity = this.sceneMode === '3d' ? 
-        viewer.entities.add({
-          name: 'move-person',
-          id: 'move-person',
-          availability: new Cesium.TimeIntervalCollection([
-            new Cesium.TimeInterval({start: start, stop: stop})
-          ]),
-          position: positionProperty,
-          orientation: new Cesium.VelocityOrientationProperty(positionProperty),
-          viewFrom: new Cesium.Cartesian3(-100, -100, 200),
-          // viewFrom: new Cesium.Cartesian3(-16000, -16000, 14000),
-          model: {
-            uri: man,
-            scale: 10,
-            minimumPixelSize: 64,
-            heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
-          }
-        }) :
-        viewer.entities.add({
-          name: 'move-person',
-          id: 'move-person',
-          availability: new Cesium.TimeIntervalCollection([
-            new Cesium.TimeInterval({start: start, stop: stop})
-          ]),
-          position: positionProperty,
-          orientation: new Cesium.VelocityOrientationProperty(positionProperty),
-          billboard: {
-            image: require('../../static/images/car.png'),
-            horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
-            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-            scale: 1,
-          }
-        })
+      moveEntity = viewer.entities.add({
+        name: 'move-person',
+        id: 'move-person',
+        availability: new Cesium.TimeIntervalCollection([
+          new Cesium.TimeInterval({start: start, stop: stop})
+        ]),
+        position: positionProperty,
+        orientation: new Cesium.VelocityOrientationProperty(positionProperty),
+        // viewFrom: new Cesium.Cartesian3(-100, -100, 200), // 第一视角
+        viewFrom: new Cesium.Cartesian3(-5000, -5000, 12000),
+        model: {
+          show: this.viewer.scene.mode === Cesium.SceneMode.SCENE3D ? true : false,
+          uri: man,
+          scale: 10,
+          minimumPixelSize: 64,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND
+        },
+        billboard: {
+          show: this.viewer.scene.mode === Cesium.SceneMode.SCENE2D ? true : false,
+          image: require('../../static/images/car.png'),
+          horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          scale: 1,
+        }
+      })
       
-      viewer.trackedEntity = moveEntity
+      // viewer.trackedEntity = moveEntity
       this.animationControl("forward")
       
       let passPath = []
@@ -2169,7 +2087,9 @@ export default {
         polyline: {
           show: true,
           positions: new Cesium.CallbackProperty(function (time, result) {
+            console.log(time.secondsOfDay)
             let floatCartesian = moveEntity.position.getValue(time)
+            console.log(floatCartesian)
             if (floatCartesian) {
               passPath.push(floatCartesian)
             } else {
@@ -2248,14 +2168,6 @@ export default {
     personTrackClose () {
       this.personTrackVisible = false
       this.handleClose()
-    },
-    /**
-     * @description: 获取子组件modeSwitcher的底图维度
-     * @param {type} 
-     * @return: 
-     */
-    getSceneMode (val) {
-      this.sceneMode = val
     },
     getTips (startTime, endTime) {
       const secondesOfTwoDay = 24 * 60 * 60 * 1000 * 2 // 两天时间的毫秒数
@@ -2439,7 +2351,7 @@ export default {
   position: absolute;
   left: 10px;
   top: 10px;
-/*  display: none;  打包时显示 */
+  display: none;  /* 打包时显示 */
 }
 .camera-info {
   position: absolute;
@@ -2514,7 +2426,7 @@ export default {
   width: 350px;
   position: absolute;
   top: 200px;
-  left: 50%;
+  left: 40%;
   transform: translate(-50%, 0);
   background: url(../../static/images/detailBox.png) no-repeat;
   background-size: 100% 100%;
