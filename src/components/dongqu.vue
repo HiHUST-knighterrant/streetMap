@@ -7,17 +7,21 @@
       </div>
       <div id="tContainer" ref="tianMap"></div>
       <div v-if="mapInited">
-        <ModeSwitcher2></ModeSwitcher2>
+        <ModeSwitcher2 ref="modeSwitch"></ModeSwitcher2>
         <!-- <BasemapSwitcher></BasemapSwitcher> -->
       </div>
       
       <div class="control-button">
         <el-radio-group v-model="layer" @change="getCompLayer">
+          <el-radio-button label="门店" size="mini"></el-radio-button>
+          <el-radio-button label="部件" size="mini"></el-radio-button>
           <el-radio-button label="人员" size="mini"></el-radio-button>
           <el-radio-button label="摄像头" size="mini"></el-radio-button>
           <el-radio-button label="车辆" size="mini"></el-radio-button>
           <el-radio-button label="案件" size="mini"></el-radio-button>
         </el-radio-group>
+        <el-button size="mini" @click="changeSceneMode('3D')">3d</el-button>
+        <el-button size="mini" @click="changeSceneMode('2D')">2d</el-button>
         <el-button size="mini" @click="register()">登记案件</el-button>
         <el-button size="mini" @click="personTrack()">人员轨迹</el-button>
         <el-button size="mini" @click="toHomeView()">默认视角</el-button>
@@ -58,7 +62,7 @@
             </tr>
             <tr>
               <td class="key">营业期限</td>
-              <td>{{ formatIsLong(select.feature.detail.isLong)}}</td>
+              <td>{{ formatIsLong(select.feature.detail.isLong,select.feature.detail.businessBegins,select.feature.detail.businessEnds)}}</td>
             </tr>
             <tr>
               <td class="key">注册地址</td>
@@ -69,16 +73,8 @@
               <td>{{ select.feature.detail.businessScope || '-'}}</td>
             </tr>
           </table>
-          <div  v-else-if="selectModel && selectModel.properties">
-            <table v-if="selectModel.properties.CompName && selectModel.properties.CompName.indexOf('井盖') !== -1">
-              <!-- <tr>
-                <td class="key">名称</td>
-                <td>{{ selectModel.properties.CompName }}</td>
-              </tr>
-              <tr>
-                <td class="key">类型</td>
-                <td>{{ selectModel.properties.ChildType || '-' }}</td>
-              </tr> -->
+          <div  v-else-if="selectModel && selectModel.detail">
+            <table>
               <tr>
                 <td class="key">大类</td>
                 <td>{{ selectModel.detail.bigName || '-'}}</td>
@@ -89,7 +85,7 @@
               </tr>
               <tr>
                 <td class="key">状态</td>
-                <td>{{ selectModel.properties.status || '-'}}</td>
+                <td>{{ selectModel.detail.componentStatusName || '-'}}</td>
               </tr>
               <tr>
                 <td class="key">所属机构</td>
@@ -100,7 +96,7 @@
                 <td>{{ selectModel.detail.address || '-'}}</td>
               </tr>
             </table>
-            <table v-else-if="selectModel.properties.CompName && selectModel.properties.CompName.indexOf('井盖') === -1">
+            <!-- <table v-else-if="selectModel.properties.CompName && selectModel.properties.CompName.indexOf('井盖') === -1">
               <tr>
                 <td class="key">名称</td>
                 <td>{{ selectModel.properties.CompName }}</td>
@@ -131,7 +127,7 @@
                 <td class="key">位置</td>
                 <td>{{ selectModel.properties.ObjPos || '无'}}</td>
               </tr>
-            </table>
+            </table> -->
           </div>
           <div v-else-if="selectEntity && selectEntity.name === 'person'" >
             <div>
@@ -322,12 +318,12 @@
             </div> -->
           <div class="footer">
             <el-button type="primary" @click="carTrackShow()" size="mini">查看轨迹</el-button>
-            <el-button type="primary" @click="carPathPlay()" size="mini">播放</el-button>
+            <!-- <el-button type="primary" @click="carPathPlay()" size="mini">播放</el-button>
             <el-button type="primary" @click="fastForward()" size="mini">快进</el-button>
             <el-button type="primary" @click="fastBack()" size="mini">快退</el-button>
             <el-button type="primary" @click="carPathReplay()" size="mini">重放</el-button>
             <el-button type="primary" @click="carChangeSpeed(30)" size="mini">改变速度</el-button>
-            <el-button type="primary" @click="carTrackExit()" size="mini">退出播放</el-button>
+            <el-button type="primary" @click="carTrackExit()" size="mini">退出播放</el-button> -->
           </div>
         </div>
       </div>
@@ -501,9 +497,6 @@ export default {
     this.mapInited = true
     let self = this;
     window.mapVue = self;
-    window["getCompLayer"] = (type) => {
-      self.getCompLayer(type);
-    };
   },
   methods: {
     initUserInfo() {
@@ -1023,6 +1016,7 @@ export default {
       this.infoBoxVisible = false
       this.carInfoVisible = false
       this.carTrackVisible = false
+      this.handleClose();
       this.$el.style.cursor = 'default'
       this.viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
       
@@ -1034,6 +1028,10 @@ export default {
         this.compLayerControl('car')
       } else if (type === '案件') {
         this.compLayerControl('case')
+      } else if (type === '门店') {
+        this.compLayerControl('shop')
+      } else if (type === '部件') {
+        this.compLayerControl('part')
       }
       this.scenePick()
     },
@@ -1089,10 +1087,15 @@ export default {
           online: require('../../static/images/icon/车辆_在线.svg'),
           offline: require('../../static/images/icon/车辆_不在线.svg')
           },
-        case: require('../../static/images/icon/案件.svg')
+        case: require('../../static/images/icon/案件.svg'),
+        shop: require('../../static/images/icon/案件.svg'),//图标待更换
+        part: require('../../static/images/icon/案件.svg')//图标待更换
       }
       if (type === 'person') {
-        this.requestPersonData().then( points => {
+        const param = {isShowOnline: '0', isAllOnline: '0'};
+        const url = '/command/aSignIn/getUserPoint';
+        const msg = '暂无人员信息';
+        this.requestPointData(param,url,msg).then( points => {
           points && points.length > 0 &&
           points.forEach( item => {
             if (item.longitude && item.latitude) {
@@ -1103,7 +1106,10 @@ export default {
           viewer.zoomTo(ds)
         })
       } else if ( type === 'video' ) {
-        this.requestVideoData().then( points => {
+        const param = {};
+        const url = '/video/video/listData';
+        const msg = '暂无摄像头信息';
+        this.requestPointData(param,url,msg).then( points => {
           points && points.length > 0 &&
           points.forEach( item => {
             item.isOnline === 1 ? this.addBillboard(item, img.video.online, ds, type) :
@@ -1112,7 +1118,10 @@ export default {
           viewer.zoomTo(ds)
         })
       } else if ( type === 'car') {
-        this.requestCarData().then( points => {
+        const param = {};
+        const url = '/slagcars/slagcars/listAll.json';
+        const msg = '暂无车辆信息';
+        this.requestPointData(param,url,msg).then( points => {
           points.forEach( item => {
             if (item.longitude && item.latitude) {
               item.isOnline === 1 ? this.addBillboard(item, img.car.online, ds, type) :
@@ -1122,14 +1131,41 @@ export default {
           viewer.zoomTo(ds)
         })
       } else if (type === 'case') {
-        this.requestCaseData().then( points => {
+        const param = {countyName: this.userInfo.currentLevelName};
+        const url = '/event/eventInfo/queryListForMap';
+        const msg = '暂无案件信息';
+        this.requestPointData(param,url,msg).then( points => {
           points.forEach( item => {
             if (item.longitude && item.latitude && !this.out_of_china(item.longitude, item.latitude)) {
               this.addBillboard(item, img.case, ds, type)
             }
           })
-          // this.cluster(ds)
           viewer.zoomTo(ds)
+        })
+      }else if(type === 'shop'){
+        const param = {orgIsShop: "1",pageSize:99999};
+        const url = '/org/torgInfo/listData';
+        const msg = '暂无门店信息';
+        this.requestPointData(param,url,msg,type).then( points => {
+          points.forEach( item => {
+            if (item.longitude && item.latitude && !this.out_of_china(item.longitude, item.latitude)) {
+              this.addBillboard(item, img.shop, ds, type)
+            }
+          })
+          viewer.zoomTo(ds)
+        })
+      }else if(type === 'part'){
+        const param = {pageSize:30};
+        const msg = '暂无部件信息';
+        this.$thirdUrl('component_outer', '/res/resource/component/basicComponent/queryCompList', (url)=>{
+          this.requestPointData(param,url,msg,type).then( points => {
+            points.forEach( item => {
+              if (item.longitude && item.latitude && !this.out_of_china(item.longitude, item.latitude)) {
+                this.addBillboard(item, img.shop, ds, type)
+              }
+            })
+            viewer.zoomTo(ds)
+          })
         })
       }
     },
@@ -1185,52 +1221,25 @@ export default {
         )
       }
     },
-    // 请求人员数据 
-    requestPersonData () {
-      const param = {isShowOnline: '0', isAllOnline: '0'}
+    /**
+     * 获取铺点数据通用方法
+     */
+    requestPointData(param,url,msg,type){
       return new Promise( resolve => {
-        this.$post('/command/aSignIn/getUserPoint', param)
-          .then( res => {
-            
+        this.$post(url, param).then( res => {
+          if(type == 'shop' || type == 'part'){
+            if (res && res.data && res.data.list.length === 0) {
+              this.$message({ message: msg, type: 'warning' })
+            }
+            const data = res.data.list || []
+            resolve(data)
+          }else{
             if (res && res.data && res.data.length === 0) {
-              this.$message({ message: '暂无人员信息', type: 'warning' })
+              this.$message({ message: msg, type: 'warning' })
             }
-            const data = (res && res.data) || []
+            const data = res.data || res.list || []
             resolve(data)
-        })
-      })
-    },
-    // 请求摄像头数据
-    requestVideoData () {
-      const param = {}
-      return new Promise( resolve => {
-        this.$post('/video/video/listData', param)
-          .then( res => {
-            if (res && res.data && res.list.length === 0) {
-              this.$message({ message: '暂无摄像头信息', type: 'warning' })
-            }
-            const data = (res && res.list) || []
-            resolve(data)
-        })
-      })
-    },
-    // 请求车辆数据
-    requestCarData () {
-      const param = {}
-      return new Promise( resolve => {
-        this.$post('/slagcars/slagcars/listAll.json', param, res => {
-          const data = (res && res.data) || []
-          resolve(data)
-        })
-      })
-    },
-    // 请求案件数据
-    requestCaseData () {
-      const param = { countyName: this.userInfo.currentLevelName }
-      return new Promise( resolve => {
-        this.$post('/event/eventInfo/queryListForMap', param, res => {
-          const data = (res && res.data)
-          resolve(data)
+          }
         })
       })
     },
@@ -1244,10 +1253,9 @@ export default {
 
         // 鼠标点击单体，显示其属性
       viewer.screenSpaceEventHandler.setInputAction(e => {
-        
+        this.infoBoxVisible = false
         let picked = viewer.scene.pick(e.position)
         if (Cesium.defined(this.select.feature)) {
-          this.infoBoxVisible = false
           // this.select.feature.color = this.select.originalColor
           this.select.feature = undefined
         }
@@ -1269,16 +1277,9 @@ export default {
             // picked.color = Cesium.Color.YELLOW
             let cartesian3 = new Cesium.Cartesian3(matrix[12], matrix[13], matrix[14])
             this.initInfobox(cartesian3)
-            let param = {
-              modelId: 'dqjz72'
-            }
-            this.$post('/org/torgInfo/listData', param)
-                .then( res => {
-                  if (res.data && res.data.list && res.data.list.length > 0) {
-                    this.select.feature.detail = res.data.list[0]
-                    this.infoBoxVisible = this.infoBoxVisible || true
-                  }
-                })
+            const modelId = this.select.feature.getProperty('id')
+            const param = {modelId: modelId};
+            this.getSingleDetail(param,'model_shop')
             // lnglat = this.cartesian2Wgs84(cartesian3)
             // viewer.camera.setView({
             //   destination: Cesium.Cartesian3.fromDegrees(lnglat.lng, lnglat.lat - 0.003, lnglat.alt + 100),
@@ -1291,27 +1292,19 @@ export default {
           } else if (picked instanceof Cesium.ModelInstance) {
             this.selectModel = picked
             matrix = this.selectModel._modelMatrix
-            this.selectModel.properties =  compData.features.find( item => this.selectModel._instanceId === item.properties.SurveyNO 
-                                                                        || this.selectModel._instanceId === item.properties.SurveyNO + '-tree').properties
+            // this.selectModel.properties =  compData.features.find( item => this.selectModel._instanceId === item.properties.SurveyNO 
+            //                                                             || this.selectModel._instanceId === item.properties.SurveyNO + '-tree').properties
             let cartesian3 = new Cesium.Cartesian3(matrix[12], matrix[13], matrix[14])
             
             this.initInfobox(cartesian3)
-            let compName = this.selectModel.properties.CompName
-            if (compName && compName.indexOf('井盖') !== -1) {
-              let param = {
-                modelId: 170
-              }
-              this.$get('http://dev.hnzwdz.com/icity_res/res/resource/component/basicComponent/queryCompSimpleList', param)
-                .then( res => {
-                  if (res.data && res.data.list && res.data.list.length > 0) {
-                    this.selectModel.detail = res.data.list[0]
-                    console.log(this.selectModel.detail)
-                    this.infoBoxVisible = this.infoBoxVisible || true
-                  }
-                })
-            } else {
-              this.infoBoxVisible = this.infoBoxVisible || true
-            }
+            // let compName = this.selectModel.properties.CompName
+            const modelId = this.selectModel._instanceId;
+            const param = {modelId: modelId}
+            // if (compName && compName.indexOf('井盖') !== -1) {
+            this.getSingleDetail(param,'model_part')
+            // } else {
+            //   this.infoBoxVisible = true
+            // }
             
             // lnglat = this.cartesian2Wgs84(cartesian3)
             // viewer.camera.setView({
@@ -1327,6 +1320,17 @@ export default {
             this.selectEntity = picked.id
             cartesian3 = this.selectEntity.position.getValue()
             this.initInfobox(cartesian3)
+            console.log(this.selectEntity)
+            console.log(this.selectEntity.name)
+            this.infoBoxVisible=true;
+            if (this.selectEntity.name === 'shop') {
+              this.select.feature = {};
+              this.select.feature.detail = this.selectEntity.property
+            }
+            if (this.selectEntity.name === 'part') {
+              this.selectModel = {};
+              this.selectModel.detail = this.selectEntity.property
+            }
             // if (this.selectEntity.name === 'video') {
             //    const param = {
             //     id: this.selectEntity.property.id
@@ -1344,9 +1348,8 @@ export default {
             //   })
             // }
             if (this.selectEntity.name === 'case') {
+              this.infoBoxVisible=false;
               window.parent.popHome.getCaseDetail(this.selectEntity.property.id)
-            } else {
-              this.infoBoxVisible = this.infoBoxVisible || true
             }
 
             // lnglat = this.cartesian2Wgs84(cartesian3)
@@ -1960,6 +1963,7 @@ export default {
       }
     },
     personTrack () {
+      this.infoBoxVisible=false;
       this.personTrackVisible = true
       const times = this.personEndTime.getTime() - 24 * 60 * 60 * 1000
       this.personStartTime = new Date(times)
@@ -2017,7 +2021,7 @@ export default {
     },
     personTrackPlay (speed) {
       const viewer = this.viewer
-
+      
       let path = this.personPathData
       let start = Cesium.JulianDate.fromDate(new Date(path[0].gps_time))
       let stop = Cesium.JulianDate.addSeconds(start, path.length, new Cesium.JulianDate())
@@ -2312,8 +2316,52 @@ export default {
         return '';
       }
     },
+
+    /**
+     * 获取单个数据详情
+     */
+    getSingleDetail(param,type){
+      if(type == 'model_shop'){
+        this.select.feature.detail = null;
+        this.$post('/org/torgInfo/listData', param).then( res => {
+          if (res.data && res.data.list && res.data.list.length > 0) {
+            this.select.feature.detail = res.data.list[0]
+            this.infoBoxVisible = true
+          }else{
+            this.$message({
+              message: '未获取到详细信息！',
+              type: 'warning'
+            })
+          }
+        })
+      }else if(type == 'model_part'){
+        this.$thirdUrl('component_outer', '/res/resource/component/basicComponent/queryCompSimpleList', (url)=>{
+          this.$get(url, param).then( res => {
+            if (res.data && res.data.list && res.data.list.length > 0) {
+              this.selectModel.detail = res.data.list[0]
+              this.infoBoxVisible = true
+            }else{
+              this.$message({
+                message: '未获取到详细信息！',
+                type: 'warning'
+              })
+            }
+          })
+        })
+      }
+    },
+    changeSceneMode(mode){
+      this.$refs.modeSwitch.dType = mode;
+    }
+
   },
   watch: {
+    sceneMode(){
+      console.log(this.sceneMode)
+      if(window.parent.popHome){
+        window.parent.popHome.sceneMode = this.sceneMode;
+      }
+    },
     windowPosition (val) {
       if (val) {
         if (this.infoBoxVisible) {

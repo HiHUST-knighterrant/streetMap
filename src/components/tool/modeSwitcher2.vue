@@ -32,15 +32,22 @@ export default {
     const scene = this.$parent.viewer.scene
     this.sceneModePicker = new Cesium.SceneModePicker('dSwitchContainer', scene, 0)
     this.$refs.switcher.children[1].style.display = 'none'
-    this.dType === '3D' ? this.$emit("getSceneMode", '3d') : this.$emit("getSceneMode", '2d')
+    this.$parent.sceneMode = this.dType;
   },
   methods: {
     sceneModeControl (action) {
       let command
       let primitives = this.$parent.viewer.scene.primitives._primitives
-      if (action === '3d') {
+      const dataSources = this.$parent.viewer.dataSources
+      if (dataSources.length > 0) {
+        for (let i = 0; i < dataSources.length; i++) {
+          var current = dataSources.get(i);
+          dataSources.remove(current)
+        }
+      }
+      if (action === '3D') {
         // 三维模型隐藏
-        // this.$parent.tileset.show = true
+        this.$parent.tileset.show = true
         primitives.forEach(item => {
           if (item instanceof Cesium.ModelInstanceCollection) {
             item.show = true
@@ -51,12 +58,13 @@ export default {
         this.$parent.customMap.show = true
         this.$parent.labelMap.show = false
         this.$parent.vectorMap.show = false
+        this.$parent.sceneMode = '3D';
         command = this.sceneModePicker.viewModel.morphTo3D
         // 显示三维指南针
         document.getElementById('navigationDiv').style.display = 'block'
-      } else if (action === '2d') {
+      } else if (action === '2D') {
         // 三维模型隐藏
-        // this.$parent.tileset.show = false
+        this.$parent.tileset.show = false
         primitives.forEach(item => {
           if (item instanceof Cesium.ModelInstanceCollection) {
             item.show = false
@@ -72,6 +80,7 @@ export default {
         this.$parent.labelMap.show = true
         this.$parent.sitelliteMap.show = false
         this.$parent.customMap.show = false
+        this.$parent.sceneMode = '2D';
         // 隐藏三维指南针
         document.getElementById('navigationDiv').style.display = 'none'
         command = this.sceneModePicker.viewModel.morphTo2D
@@ -98,10 +107,10 @@ export default {
     dType () {
       if (this.dType === '3D') {
         // this.$parent.viewer.scene.morphTo3D(1)
-        this.sceneModeControl('3d')
+        this.sceneModeControl('3D')
       } else {
         // this.$parent.viewer.scene.morphTo2D(1)
-        this.sceneModeControl('2d')
+        this.sceneModeControl('2D')
       }
     }
   }
@@ -112,6 +121,7 @@ export default {
   .dSwitch {
     position: absolute;
     top: 5px;
-    right: 5px
+    right: 5px;
+    display: none;
   }
 </style>
