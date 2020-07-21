@@ -1074,23 +1074,45 @@ export default {
      */
     addPointInLayer (type, ds) {
       const viewer = this.viewer
-      const img = {
-        person: {
-          online: require('../../static/images/icon/人员_在线.svg'),
-          offline: require('../../static/images/icon/人员_不在线.svg')
-        },
-        video: {
-          online: require('../../static/images/icon/摄像头_在线.svg'),
-          offline: require('../../static/images/icon/摄像头_不在线.svg')
+      if(this.sceneMode == '3D'){
+        var img = {
+          person: {
+            online: require('../../static/images/icon/人员_在线.svg'),
+            offline: require('../../static/images/icon/人员_不在线.svg')
           },
-        car: {
-          online: require('../../static/images/icon/车辆_在线.svg'),
-          offline: require('../../static/images/icon/车辆_不在线.svg')
+          video: {
+            online: require('../../static/images/icon/摄像头_在线.svg'),
+            offline: require('../../static/images/icon/摄像头_不在线.svg')
+            },
+          car: {
+            online: require('../../static/images/icon/车辆_在线.svg'),
+            offline: require('../../static/images/icon/车辆_不在线.svg')
+            },
+          case: require('../../static/images/icon/案件.svg'),
+        }
+      }else{
+        var img = {
+          person: {
+            online: require('../../static/images/icon/person_2.svg'),
+            offline: require('../../static/images/icon/person_1.svg')
           },
-        case: require('../../static/images/icon/案件.svg'),
-        shop: require('../../static/images/icon/案件.svg'),//图标待更换
-        part: require('../../static/images/icon/案件.svg')//图标待更换
+          video: {
+            online: require('../../static/images/icon/video_2.svg'),
+            offline: require('../../static/images/icon/video_1.svg')
+            },
+          car: {
+            online: require('../../static/images/icon/car_2.svg'),
+            offline: require('../../static/images/icon/car_1.svg')
+            },
+          case:{
+            onGoing: require('../../static/images/icon/case_1.svg'),
+            closed: require('../../static/images/icon/case_3.svg'),
+          },
+          shop: require('../../static/images/icon/shop.svg'),
+          part: require('../../static/images/icon/part.svg')
+        }
       }
+      
       if (type === 'person') {
         const param = {isShowOnline: '0', isAllOnline: '0'};
         const url = '/command/aSignIn/getUserPoint';
@@ -1137,7 +1159,15 @@ export default {
         this.requestPointData(param,url,msg).then( points => {
           points.forEach( item => {
             if (item.longitude && item.latitude && !this.out_of_china(item.longitude, item.latitude)) {
-              this.addBillboard(item, img.case, ds, type)
+              if(this.sceneMode == '3D'){
+                this.addBillboard(item, img.case, ds, type)
+              }else{
+                if(item.eventPhase == 6){
+                  this.addBillboard(item, img.case.closed, ds, type)
+                }else{
+                  this.addBillboard(item, img.case.onGoing, ds, type)
+                }
+              }
             }
           })
           viewer.zoomTo(ds)
@@ -1161,7 +1191,7 @@ export default {
           this.requestPointData(param,url,msg,type).then( points => {
             points.forEach( item => {
               if (item.longitude && item.latitude && !this.out_of_china(item.longitude, item.latitude)) {
-                this.addBillboard(item, img.shop, ds, type)
+                this.addBillboard(item, img.part, ds, type)
               }
             })
             viewer.zoomTo(ds)
@@ -1186,7 +1216,7 @@ export default {
           image: url,
           horizontalOrigin: Cesium.HorizontalOrigin.CENTER,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          scale: 1,  //scale>1在自身大小的基础上翻倍，为-1时倒置
+          scale: this.sceneMode=='3D'?1:0.3,  //scale>1在自身大小的基础上翻倍，为-1时倒置
         }
       })
       entity.property = item 
