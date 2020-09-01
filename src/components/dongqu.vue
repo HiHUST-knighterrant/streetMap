@@ -8,6 +8,7 @@
       <div id="tContainer" ref="tianMap"></div>
       <div v-if="mapInited">
         <ModeSwitcher2 ref="modeSwitch"></ModeSwitcher2>
+        <!-- <Meature></Meature> -->
         <!-- <BasemapSwitcher></BasemapSwitcher> -->
       </div>
       
@@ -127,8 +128,8 @@
                 <td class="key">位置</td>
                 <td>{{ selectModel.properties.ObjPos || '无'}}</td>
               </tr>
-            </table> -->
-          </div>
+            </table>  -->
+          </div> 
           <div v-else-if="selectEntity && selectEntity.name === 'person'" >
             <div>
               <table>
@@ -318,12 +319,12 @@
             </div> -->
           <div class="footer">
             <el-button type="primary" @click="carTrackShow()" size="mini">查看轨迹</el-button>
-            <!-- <el-button type="primary" @click="carPathPlay()" size="mini">播放</el-button>
+            <el-button type="primary" @click="carPathPlay()" size="mini">播放</el-button>
             <el-button type="primary" @click="fastForward()" size="mini">快进</el-button>
             <el-button type="primary" @click="fastBack()" size="mini">快退</el-button>
             <el-button type="primary" @click="carPathReplay()" size="mini">重放</el-button>
             <el-button type="primary" @click="carChangeSpeed(30)" size="mini">改变速度</el-button>
-            <el-button type="primary" @click="carTrackExit()" size="mini">退出播放</el-button> -->
+            <el-button type="primary" @click="carTrackExit()" size="mini">退出播放</el-button>
           </div>
         </div>
       </div>
@@ -390,6 +391,7 @@
           </div>
         </div>
       </div>
+
     </div>   
 </template>
 <script>
@@ -399,8 +401,6 @@ import CesiumNavigation from 'cesium-navigation-es6'
 require('../../static/libs/cesium/cesiumGeometry')
 const qs = require('qs')
 import common from '../uitl/common'
-// 部件数据
-import compData from '../../static/SampleData/comp.json' 
 // 三维模型
 import shu from '../../static/3dModel/shu.gltf'
 import lajitongStreet from '../../static/3dModel/comp/lajitong_street.gltf'
@@ -425,6 +425,14 @@ import yushuibizi from '../../static/3dModel/comp/yushuibizi.gltf'
 import ModeSwitcher from './tool/modeSwitcher'
 import ModeSwitcher2 from './tool/modeSwitcher2'
 import BasemapSwitcher from './tool/basemapSwitcher'
+// import Meature from './tool/meature'
+// 建筑模型--部件数据
+// import compData from '../../static/SampleData/comp.json' 
+// 三维单体化数据
+import componentDataClamped from '../../static/SampleData/point.json'
+import compData from '../../static/SampleData/3dComp.json'
+import BuildingData from '../../static/SampleData/3dBuilding.json'
+import orgData from '../../static/SampleData/3dOrg.json'
 
 export default {
   components: {
@@ -447,10 +455,11 @@ export default {
       infoBoxVisible: false,
       windowPosition: '',
       select: {
-        feature: undefined,
-        originalColor: new Cesium.Color()
+        primitive: undefined,
+        attributes: new Cesium.Color()
       },
       selectModel: null,
+      selectModelBox: null,
       selectEntity: null,
       tileset: null,
       direction: '',
@@ -472,12 +481,12 @@ export default {
       personPlaySpeed: 5,
       personTrackVisible: false,
       personStartTime: undefined,
-      personEndTime: new Date('2020-06-16 14:02:26'),
+      personEndTime: new Date('2020-07-23 11:13:26'),
       personPathData: undefined,
       playFlag: true,
-      currentPerson: '0867597017631042',
+      currentPerson: '0867597017655702',
       userInfo: '',
-      homeViewOptions: {
+      homeViewOptionsVersion1: {
         destination: Cesium.Cartesian3.fromDegrees(113.75885198222937, 34.78853390435369, 920.5362867864075),
         orientation: {
           heading: Cesium.Math.toRadians(17.959169620278136),
@@ -486,14 +495,25 @@ export default {
         },
         duration: 2
       },
+      homeViewOptions: {
+        destination: Cesium.Cartesian3.fromDegrees(113.74159603307372, 34.77766781955999, 2308.593862489063),
+        orientation: {
+          heading: Cesium.Math.toRadians(30.261103209957636),
+          pitch: Cesium.Math.toRadians(-42.77768958916718),
+          roll: Cesium.Math.toRadians(0.12395771196527275)
+        },
+        duration: 2
+      },
       carPassPath: [],
-      sceneMode: '' // 维度模式
+      sceneMode: '', // 维度模式
+      unitStep: '',
+      sumOffset: ''
     }
   },
   mounted () {
     this.initUserInfo()
     this.initViewer()
-    this.initTMap()
+    // this.initTMap()
     this.mapInited = true
     let self = this;
     window.mapVue = self;
@@ -562,6 +582,14 @@ export default {
 
       // 禁止相机进入地面以下
       this.viewer.scene.preRender.addEventListener(this.undergroundMode)
+
+      this.viewer.scene.shadowMap.darkness = 1.275
+      this.viewer.scene.skyAtmosphere.brightShift = 0.4 // 大气的亮度
+      // this.viewer.scene.debugShowFramesPerSecond = true
+      this.viewer.scene.highDynamicRange = false
+      this.viewer.scene.sun.show = false
+
+      
       
       // 添加指南针
       var options = {
@@ -742,11 +770,11 @@ export default {
       this.currentCamera = `经度: ${cameraInfo.longitude}° 纬度: ${cameraInfo.latitude}° 高度: ${cameraInfo.height} 航偏角: ${cameraInfo.heading}° 俯仰角: ${cameraInfo.pitch}° 翻滚角: ${cameraInfo.roll}°`
     },
     /**
-     * @description: 添加3dtile数据
+     * @description: 添加3dtile数据--建筑模型
      * @param {type} 
      * @return: 
      */
-    load3DTile () {
+    load3DTileVersion1 () {
       const viewer = this.viewer
       let _this = this
       this.tileset = new Cesium.Cesium3DTileset({
@@ -785,20 +813,20 @@ export default {
           tileset._root.transform = m
           this.tileset = tileset
           
-          this.loadComp()
+          this.loadCompVersion1() // 加载倾斜摄影数据时不显示
         }) 
         .otherwise( error => {
           console.log(error)
         })
 
-        this.scenePick()
+        this.scenePickVersion1()
     },
     /**
-     * @description: 添加部件（ModelInstance、ModelInstanceCollection）, 并调整某些模型的方向
+     * @description: 添加部件数据--建筑模型
      * @param {type} 
      * @return: 
      */
-    loadComp () {
+    loadCompVersion1 () {
       const viewer = this.viewer
       let features = compData.features
       let treeInstances = [], ludengInstances = [], yushuiInstances = [], jgdengInstance = []
@@ -1008,11 +1036,234 @@ export default {
       }))
     },
     /**
+     * @description: 加载清除道路上树和垃圾桶的倾斜摄影--version2
+     * @param {type} 
+     * @return: 
+     */
+    load3DTile () {
+      const viewer = this.viewer
+      
+      // 添加3dTile数据
+      this.tileset = new Cesium.Cesium3DTileset({
+        url: "http://192.168.1.127:9000/model/ed744fa0e2a711eaafe4933aaa75cd5b/tileset.json",
+        // maximumScreenSpaceError: 2,
+        // skipScreenSpaceErrorFactor: 16
+      })
+      
+      viewer.scene.primitives.add(this.tileset)
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(113.74159603307372, 34.77766781955999, 2308.593862489063),
+        orientation: {
+          heading: Cesium.Math.toRadians(30.261103209957636),
+          pitch: Cesium.Math.toRadians(-42.77768958916718),
+          roll: Cesium.Math.toRadians(0.12395771196527275)
+        },
+        duration: 2
+      })
+      let tilesetArr = Cesium.Cartesian3.fromArray([
+        this.tileset.modelMatrix[12],
+        this.tileset.modelMatrix[13],
+        this.tileset.modelMatrix[14]
+      ])
+      let center = Cesium.Cartesian3.add(tilesetArr, Cesium.Cartesian3.fromArray([22.1, -48.7, -36.0]), new Cesium.Cartesian3())
+      let m = Cesium.Matrix4.fromTranslation(center)
+      this.tileset.modelMatrix = m
+  
+      this.addMonomerData()
+      this.scenePick()
+    },
+    /**
+     * @description: 添加倾斜摄影的单体化数据
+     * @param {type} 
+     * @return: 
+     */
+    addMonomerData () {
+      const viewer = this.viewer
+      
+      // 添加倾斜摄影的单体数据——建筑物
+      BuildingData.features.forEach(feature => {
+        const instance = new Cesium.GeometryInstance({
+          id: `building-${feature.properties.ORIG_FID}`,
+          geometry: new Cesium.PolygonGeometry.fromPositions({
+            positions: Cesium.Cartesian3.fromDegreesArray([].concat.apply([], feature.geometry.coordinates[0][0])),
+            extrudedHeight: 100,
+            vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL
+          }),
+          attributes : {
+            color : Cesium.ColorGeometryInstanceAttribute.fromColor(Cesium.Color.AQUA.withAlpha(0.01))
+          }
+        })
+        viewer.scene.primitives.add(new Cesium.ClassificationPrimitive({
+          geometryInstances: instance,
+          appearance : new Cesium.PerInstanceColorAppearance(),
+          classificationType: Cesium.ClassificationType.CESIUM_3D_TILE,
+          releaseGeometryInstances: false
+        }))
+      })
+      // 添加倾斜摄影的单体数据——门店
+      orgData.features.forEach(feature => {
+        let minHeight = feature.properties.minHeight
+        let maxHeight = feature.properties.maxHeight
+        const id = feature.properties.OBJECTID
+        const instance = new Cesium.GeometryInstance({
+          id:  `org-${id}`,
+          geometry: new Cesium.WallGeometry({
+            positions: Cesium.Cartesian3.fromDegreesArray([].concat.apply([], feature.geometry.coordinates[0])),
+            granularity: 5,
+            maximumHeights: Array(feature.geometry.coordinates[0].length).fill(maxHeight),
+            minimumHeights: Array(feature.geometry.coordinates[0].length).fill(minHeight),
+            vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL
+          }),
+          attributes : {
+            color : Cesium.ColorGeometryInstanceAttribute.fromColor(Cesium.Color.BLUE.withAlpha(0.01))
+          }
+        })
+        viewer.scene.primitives.add(new Cesium.Primitive({
+          geometryInstances: instance,
+          appearance : new Cesium.PerInstanceColorAppearance(),
+          releaseGeometryInstances: false
+        }))
+      })
+      // // 获取点在倾斜摄影的顶部坐标
+      // let cartesians = []
+      // componentDataVersion2.features.forEach(feature => {
+      //   const coordinates = feature.geometry.coordinates
+      //   const cartesian = Cesium.Cartesian3.fromDegrees(coordinates[0], coordinates[1])
+      //   cartesians.push(cartesian)
+      // })
+      // console.log(cartesians)
+      // viewer.scene.clampToHeightMostDetailed(cartesians)
+      // .then(clampedCartesians => {
+      //   console.log(clampedCartesians)
+      //   clampedCartesians.forEach((item, index) => {
+      //     componentDataVersion2.features[index].properties.clampedCartesian = item
+      //   })
+      //   console.log(JSON.stringify(componentDataVersion2))
+      // })
+
+      // 添加倾斜摄影的单体数据——部件
+      let instances = []
+      let ludengjgInstances = [], ranqijgInstances = [], relijgInstances = [], xiaofangjgInstances = [], shangshuijgInstances = [], shangshuijgInstancesO = [], 
+          tongxinjgInstances = [], yushuijgInstances = [], wushuijgInstances = [], dianlijgInstances = [], gonganjgInstances = [], qitajgInstances = []
+      let lajitongInstances = []
+      let shumuInstances = []
+      let jinggaiInstances = []
+      let ludengInstances = []
+      componentDataClamped.features.forEach(feature => {
+        const id = feature.properties.id
+        const compName = feature.properties.名称
+        let clampedCartesian = feature.properties.clampedCartesian
+        let cartesian = clampedCartesian ? 
+            new Cesium.Cartesian3(clampedCartesian.x, clampedCartesian.y, clampedCartesian.z) :
+            Cesium.Cartesian3.fromDegrees(feature.geometry.coordinates[0],feature.geometry.coordinates[1])
+        // let cartesian =  Cesium.Cartesian3.fromDegrees(feature.geometry.coordinates[0],feature.geometry.coordinates[1])
+
+        let modelMatrix, rotateDegree, scale, offset
+        if (compName.indexOf('井盖') != -1) {
+          offset = Cesium.Cartesian3.fromArray([0, 0, -0.07])
+          cartesian = Cesium.Cartesian3.add(cartesian, offset,  new Cesium.Cartesian3())
+          rotateDegree = Math.random() * 360
+          scale = 2.5
+          modelMatrix = this.cartesianToMatrix4(cartesian, scale, rotateDegree)
+          const instance = {
+            batchId: `component-${id}-jinggai`,
+            modelMatrix: modelMatrix
+          }
+          switch (compName) {
+            case '路灯井盖': 
+              ludengjgInstances.push(instance)
+              break;
+            case '天然气井盖':
+              ranqijgInstances.push(instance)
+              break;
+            case '热力井盖': 
+              relijgInstances.push(instance)
+              break;
+            case '给水井盖':
+              shangshuijgInstances.push(instance)
+              break;
+            case '通信井盖' || '通讯井盖' :
+              tongxinjgInstances.push(instance)
+              break;
+            case '雨水井盖':
+              yushuijgInstances.push(instance)
+              break;
+            case '污水井盖':
+              wushuijgInstances.push(instance)
+              break;
+            case '电力井盖':
+              dianlijgInstances.push(instance)
+              break;
+            case '公安井盖':
+              gonganjgInstances.push(instance)
+              break;
+            case '消防井盖':
+              xiaofangjgInstances.push(instance)
+              break;
+            default:
+              qitajgInstances.push(instance)
+          }
+        } else if (compName === '垃圾箱') {
+          scale = 1
+          rotateDegree = feature.properties.angle
+          modelMatrix = this.cartesianToMatrix4(cartesian, scale, rotateDegree)
+          const instance = {
+            batchId: `component-${id}-lajitong`,
+            modelMatrix: modelMatrix
+          }
+          lajitongInstances.push(instance)
+        } else if (compName === '树木') {
+          scale = 1
+          modelMatrix = this.cartesianToMatrix4(cartesian, scale)
+          const instance = {
+            batchId: `component-${id}-shumu`,
+            modelMatrix: modelMatrix
+          }
+          shumuInstances.push(instance)
+        } else if (compName === '路灯') {
+          scale = 1
+          rotateDegree = feature.properties.angle
+          modelMatrix = this.cartesianToMatrix4(cartesian, scale, rotateDegree)
+          const instance = {
+            batchId: `component-${id}-ludeng`,
+            modelMatrix: modelMatrix
+          }
+          ludengInstances.push(instance)
+        }
+      })
+      this.createInstanceCollection(jgQita, ludengjgInstances, false) // 路灯井盖
+      this.createInstanceCollection(jgQita, ranqijgInstances, false) // 天然气井盖
+      this.createInstanceCollection(jgQita, relijgInstances, false) // 热力井盖
+      this.createInstanceCollection(jgQita, xiaofangjgInstances, false) //消防井盖
+      this.createInstanceCollection(jgQita, shangshuijgInstances, false) // 带花色的上水井盖
+      this.createInstanceCollection(jgQita, shangshuijgInstancesO, false)  // 不带花色的上水井盖
+      this.createInstanceCollection(jgQita, tongxinjgInstances, false)  // 通信井盖
+      this.createInstanceCollection(jgQita, yushuijgInstances, false) // 雨水井盖
+      this.createInstanceCollection(jgQita, wushuijgInstances, false) // 污水井盖
+      this.createInstanceCollection(jgQita, dianlijgInstances, false) // 雨水井盖
+      this.createInstanceCollection(jgQita, gonganjgInstances, false) // 公安井盖
+      this.createInstanceCollection(jgQita, qitajgInstances, false)
+      this.createInstanceCollection(shu, shumuInstances) // 树木
+      // 垃圾桶
+      this.createInstanceCollection(lajitongStreet, lajitongInstances) // 路两侧的垃圾桶
+      this.createInstanceCollection(ludeng, ludengInstances) // 路灯
+    },
+    cartesianToMatrix4 (cartesian, scale, rotateDegree) {
+      let modelMatrix = Cesium.Transforms.headingPitchRollToFixedFrame(cartesian, new Cesium.HeadingPitchRoll(0, 0, 0))
+      Cesium.Matrix4.multiplyByUniformScale(modelMatrix, scale, modelMatrix)
+      if (rotateDegree) {
+        const rotate = Cesium.Matrix3.fromRotationZ(Cesium.Math.toRadians(rotateDegree))
+        Cesium.Matrix4.multiplyByMatrix3(modelMatrix, rotate, modelMatrix)
+      }
+      return modelMatrix
+    },
+    /**
      * @description: 选择部件类型去铺点
      * @param {String} type
      * @return: 
      */
     getCompLayer (type) {
+      console.log(this.sceneMode)
       this.infoBoxVisible = false
       this.carInfoVisible = false
       this.carTrackVisible = false
@@ -1044,10 +1295,11 @@ export default {
       const viewer = this.viewer
       const dataSources = viewer.dataSources
       let ds
-      if (dataSources.getByName(type).length > 0) {
+
+      if (dataSources.getByName(type+this.sceneMode).length > 0) {
         for (let i = 0; i < viewer.dataSources.length; i++) {
           let _ds = dataSources.get(i)
-          if (_ds.name === type) {
+          if (_ds.name === type+this.sceneMode) {
             _ds.show = true
             viewer.zoomTo(_ds)
             ds = _ds
@@ -1061,7 +1313,7 @@ export default {
             dataSources.get(i).show = false
           }
         }
-        ds = new Cesium.CustomDataSource(type)
+        ds = new Cesium.CustomDataSource(type+this.sceneMode)
         dataSources.add(ds)
         this.addPointInLayer(type, ds)
       }
@@ -1274,11 +1526,11 @@ export default {
       })
     },
     /**
-     * @description: cesium视图的点击事件（3dtile, modelInstance, entity）
+     * @description: 建筑物模型的点击事件
      * @param {type} 
      * @return: 
      */
-    scenePick () {
+    scenePickVersion1 () {
       const viewer = this.viewer
 
         // 鼠标点击单体，显示其属性
@@ -1286,7 +1538,11 @@ export default {
         this.infoBoxVisible = false
         let picked = viewer.scene.pick(e.position)
         if (Cesium.defined(this.select.feature)) {
-          // this.select.feature.color = this.select.originalColor
+          console.log(this.select.feature)
+          // if (picked._batchId === this.select.feature._batchId) return
+          console.log(this.select.feature.content.batchTable)
+          if (!Cesium.defined(this.select.feature.color)) return
+          this.select.feature.color = this.select.attributes
           this.select.feature = undefined
         }
         if (Cesium.defined(this.selectModel)) {
@@ -1296,15 +1552,14 @@ export default {
         if (Cesium.defined(this.selectEntity)) {
           this.selectEntity = undefined
         }
-        
-        
+  
         if (Cesium.defined(picked)) {
           let matrix, cartesian3, lnglat
           if (picked instanceof Cesium.Cesium3DTileFeature) {
             this.select.feature = picked
             matrix = this.select.feature.content._model.modelMatrix
-            // Cesium.Color.clone(picked.color, this.select.originalColor)
-            // picked.color = Cesium.Color.YELLOW
+            Cesium.Color.clone(picked.color, this.select.attributes)
+            picked.color = Cesium.Color.YELLOW
             let cartesian3 = new Cesium.Cartesian3(matrix[12], matrix[13], matrix[14])
             this.initInfobox(cartesian3)
             const modelId = this.select.feature.getProperty('id')
@@ -1350,8 +1605,6 @@ export default {
             this.selectEntity = picked.id
             cartesian3 = this.selectEntity.position.getValue()
             this.initInfobox(cartesian3)
-            console.log(this.selectEntity)
-            console.log(this.selectEntity.name)
             this.infoBoxVisible=true;
             if (this.selectEntity.name === 'shop') {
               this.select.feature = {};
@@ -1398,6 +1651,165 @@ export default {
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
     },
     /**
+     * @description: 倾斜摄影--cesium视图的点击事件--倾斜摄影数据version2(去除倾斜摄影上路边的树、垃圾桶、停放的车辆等)
+     * @param {type} 
+     * @return: 
+     */
+    scenePick () {
+      const viewer = this.viewer
+      let attributes, currentColor, currentShow
+
+      const shumuBox = Cesium.BoxGeometry.fromDimensions({
+        vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL,
+        dimensions: new Cesium.Cartesian3(5, 5, 16)
+      })
+      const lajitongBox = Cesium.BoxGeometry.fromDimensions({
+        vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL,
+        dimensions: new Cesium.Cartesian3(1.5, 1.5, 3)
+      })
+      const jinggaiBox = Cesium.BoxGeometry.fromDimensions({
+        vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL,
+        dimensions: new Cesium.Cartesian3(0.6, 0.6, 0.3)
+      })
+      const ludengBox = Cesium.BoxGeometry.fromDimensions({
+        vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL,
+        dimensions: new Cesium.Cartesian3(1, 1, 23)
+      })
+      const boxRotate = Cesium.Matrix3.fromRotationZ(Cesium.Math.toRadians(45))
+
+      viewer.screenSpaceEventHandler.setInputAction(e =>{
+        const picked = viewer.scene.pick(e.position)
+        console.log(picked)
+        if (!Cesium.defined(picked) || picked.primitive instanceof Cesium.Cesium3DTileset) return
+        if (Cesium.defined(this.select.feature) && Cesium.defined(this.select.feature.primitive)) {
+          if (picked.id === this.select.feature.id) return
+          attributes = this.select.feature.primitive.getGeometryInstanceAttributes(this.select.feature.id)
+          attributes.show = [0]
+          attributes.color = [0, 0, 255, 1]
+          attributes = {}
+          this.select.feature = undefined
+        }
+        if (Cesium.defined(this.selectModel) && this.selectModel.instanceId) {
+          if (picked.instanceId === this.selectModel.instanceId) return
+          this.selectModel = undefined
+          viewer.scene.primitives.remove(this.selectModelBox)
+        }
+        if (Cesium.defined(this.selectEntity)) {
+          if (picked.id.id === this.selectEntity.id) return
+          this.selectEntity = undefined
+        }
+        
+        if (picked instanceof Cesium.ModelInstance) {
+          this.selectModel = picked
+          let matrix = this.selectModel.modelMatrix
+          let centerCartesian =  new Cesium.Cartesian3(matrix[12], matrix[13], matrix[14])
+
+          Cesium.Matrix4.multiplyByMatrix3(matrix, boxRotate, matrix)
+          const type = this.selectModel.instanceId.split('-')[2]
+          let box
+          switch (type) {
+            case 'shumu':
+              box = shumuBox
+              break
+            case 'jinggai':
+              box = jinggaiBox
+              break
+            case 'ludeng':
+              box = ludengBox
+              break
+            case 'lajitong':
+              box = lajitongBox
+              break
+          }
+          this.selectModelBox = viewer.scene.primitives.add(new Cesium.Primitive({
+            geometryInstances: new Cesium.GeometryInstance({
+              id: 'select-model',
+              geometry: box,
+              modelMatrix: matrix,
+              attributes : {
+                color : Cesium.ColorGeometryInstanceAttribute.fromColor(Cesium.Color.YELLOW.withAlpha(0.5))
+              }
+            }),
+            appearance : new Cesium.PerInstanceColorAppearance(),
+            releaseGeometryInstances: false
+          }))
+          this.initInfobox(centerCartesian)
+          const id = parseInt(this.selectModel.instanceId.split('-')[1])
+          const param = {modelId: 170}
+          this.getSingleDetail(param, 'model_part')
+          return
+        }
+
+        if (picked.id instanceof Cesium.Entity) {
+          this.carTrackVisible = false
+          this.selectEntity = picked.id
+          let centerCartesian = this.selectEntity.position.getValue()
+          this.initInfobox(centerCartesian)
+          this.infoBoxVisible = true
+          console.log(this.infoBoxVisible)
+          if (this.selectEntity.name === 'shop') {
+            this.select.feature = {};
+            this.select.feature.detail = this.selectEntity.property
+          }
+          if (this.selectEntity.name === 'part') {
+            this.selectModel = {};
+            this.selectModel.detail = this.selectEntity.property
+          }
+        } else {
+          const pickedGeom = picked.primitive.geometryInstances.geometry
+          if (pickedGeom instanceof Cesium.PolygonGeometry) { 
+            this.select.feature = picked
+            var attributes = picked.primitive.getGeometryInstanceAttributes(picked.id)
+            attributes.color = [255, 255, 0, 128]
+            attributes.show = [1]
+            // 获取其详情信息
+            const buildingId =  parseInt(picked.id.split('-')[1])
+            let feature = BuildingData.features.find(feature => feature.properties.ORIG_FID === buildingId)
+            
+            let centerCartesian = Cesium.Cartesian3.fromDegrees(feature.properties.center_lon, feature.properties.center_lat)
+            // 显示信息框
+            this.initInfobox(centerCartesian)
+            const param =  {modelId: 'dqjz72'} // ==============参数待修改
+            this.getSingleDetail(param, 'model_shop')
+          } else if (pickedGeom instanceof Cesium.WallGeometry) {
+            this.select.feature = picked
+            console.log(picked)
+            let attributes = picked.primitive.getGeometryInstanceAttributes(picked.id)
+            attributes.color = [255, 255, 0, 128]
+            attributes.show = [1]
+            const orgId =  parseInt(picked.id.split('-')[1])
+            let feature = orgData.features.find(feature => feature.properties.OBJECTID === orgId)
+            console.log(feature)
+            // 计算中心点坐标
+            let height = picked.primitive.geometryInstances.geometry._maximumHeights[0]
+            let centerCartesian = Cesium.Cartesian3.fromDegrees(feature.properties.center_lon, feature.properties.center_lat, height)
+            // 显示信息框
+            this.initInfobox(centerCartesian)
+            const param =  {modelId: 'dqjz72'}
+            this.getSingleDetail(param,'model_shop')
+          }
+        }
+        
+      }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+    },
+    /**
+     * @description: 获取线的中心点
+     * @param {Cesium.Cartesian3} cartesian3
+     * @return: 
+     */
+    getLineCenter (positions) {
+      let center = {x: 0, y: 0, z: 0}
+      positions.forEach(item => {
+        center.x = item.x + center.x
+        center.y = item.y + center.y
+        center.z = item.z + center.z
+      })
+      center.x = center.x / positions.length
+      center.y = center.y / positions.length
+      center.z = center.z / positions.length
+      return new Cesium.Cartesian3(center.x, center.y, center.z)
+    },
+    /**
      * @description: 世界坐标转换为wgs1984地理坐标
      * @param {Cesium.Cartesian3} cartesian3
      * @return: 
@@ -1430,6 +1842,17 @@ export default {
      */
     closeInfoBox () {
       this.infoBoxVisible = false
+      // 移除高亮的部件点的盒子
+      this.viewer.scene.primitives.remove(this.selectModelBox)
+      // 移除高亮的org、building的颜色
+      if (Cesium.defined(this.select.feature)) {
+        let attributes = this.select.feature.primitive.getGeometryInstanceAttributes(this.select.feature.id)
+        attributes.show = [0]
+        attributes.color = [0, 0, 255, 1]
+        attributes = {}
+        this.viewer.scene.primitives.remove(this.select.feature)
+        this.select.feature = undefined
+      }
     },
     /**
      * @description: 案件登记
@@ -1464,6 +1887,7 @@ export default {
         viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
         return 
       }
+
       let cartesian = viewer.camera.pickEllipsoid(e.position, viewer.scene.globe.ellipsoid)
       this.drawEntity = this.addPoint(cartesian)
 
@@ -1724,7 +2148,7 @@ export default {
     carTrackShow () {
       const viewer = this.viewer
       this.carInfoVisible = false
-      this.carTrackVisible = false // 打包时显示
+      // this.carTrackVisible = false // 打包时显示
       
       // 判断输入时间和结束时间是否正确
       if (!this.carStartTime || !this.carEndTime) {
@@ -1773,7 +2197,7 @@ export default {
             this.carPathData = pathMove
             viewer.zoomTo(fullPath)
             // 仪表盘显示
-            window.parent.popHome.updateCarMeterStatus(true, this.selectEntity.property) // 打包时显示
+            // window.parent.popHome.updateCarMeterStatus(true, this.selectEntity.property) // 打包时显示
           }
         })
       })
@@ -1908,7 +2332,7 @@ export default {
         let carDirection = moveEntity.properties.direction.getValue(viewer.clock.currentTime)
         // let carDistance =  moveEntity.properties.distance.getValue(currentTime).toFixed(2)
         // 向父页面传递车速、方向
-        window.parent.popHome.updateCarMeterInfo(carSpeed, carDirection) // 打包时显示
+        // window.parent.popHome.updateCarMeterInfo(carSpeed, carDirection) // 打包时显示
         // let carMoveInfoBox = this.$el.getElementsByClassName('carMoveInfoBox')[0]
         // carMoveInfoBox.style.display = "block"
         // let cartesian =  moveEntity.position.getValue(currentTime)
@@ -2015,20 +2439,22 @@ export default {
       if (!this.getTips(this.personStartTime, this.personEndTime)) return
       let param = { start_time: this.formatTime(this.personStartTime),
                     end_time: this.formatTime(this.personEndTime), 
-                    device_id: this.currentPerson}
-      this.$thirdUrl('python_street_outer', 'about_duty/history/track', url => {
-        this.$post(url, param).then(res => {
+                    device_id: this.currentPerson,
+                    device_type: 'card'}
+      // this.$thirdUrl('python_street_outer', 'about_duty/history/track', url => {
+        this.$post('http://192.168.1.180:8021/watch/gps/now', param).then(res => {
           let fullPath
-          if (res.status === 200 && res.data && res.data.length <= 0) {
+          if (res.code === 0 && res.data && res.data.length <= 0) {
             this.$message({ message: '暂无轨迹数据', type: 'error' })
             return
           } else {
             if ( Cesium.defined(viewer.entities) && (fullPath = viewer.entities.getById('PersonFullPath'))) {
               return
             }
-            let path = res.data
+            let path = res.data // 高德坐标
             let pathArr = []
             for (let i=0; i < path.length; i++) {
+              path[i].lon_lat = this.gcj02towgs84(path[i].lon_lat[0], path[i].lon_lat[1])
               pathArr.push(Cesium.Cartesian3.fromDegrees(path[i].lon_lat[0], path[i].lon_lat[1]))
             }
             
@@ -2047,7 +2473,7 @@ export default {
             this.personPathData = path
           }
         })
-      })
+      // })
     },
     personTrackPlay (speed) {
       const viewer = this.viewer
@@ -2085,6 +2511,7 @@ export default {
         interpolationAlgorithm: Cesium.LagrangePolynomialApproximation
       })
 
+      console.log(man)
       moveEntity = viewer.entities.add({
         name: 'move-person',
         id: 'move-person',
@@ -2121,9 +2548,7 @@ export default {
         polyline: {
           show: true,
           positions: new Cesium.CallbackProperty(function (time, result) {
-            console.log(time.secondsOfDay)
             let floatCartesian = moveEntity.position.getValue(time)
-            console.log(floatCartesian)
             if (floatCartesian) {
               passPath.push(floatCartesian)
             } else {
@@ -2170,6 +2595,7 @@ export default {
       this.viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
       this.scenePick()
       this.viewer.scene.camera.setView(this.homeViewOptions)
+      this.layer = undefined
       this.viewer.dataSources.removeAll()
       this.viewer.entities.removeAll()
 
@@ -2192,6 +2618,7 @@ export default {
         },
         duration: 2
       })
+      this.layer = undefined
       this.viewer.dataSources.removeAll()
       this.viewer.entities.removeAll()
     },
@@ -2352,10 +2779,11 @@ export default {
      */
     getSingleDetail(param,type){
       if(type == 'model_shop'){
-        this.select.feature.detail = null;
+        this.select.feature.detail = null
         this.$post('/org/torgInfo/listData', param).then( res => {
           if (res.data && res.data.list && res.data.list.length > 0) {
             this.select.feature.detail = res.data.list[0]
+            console.log(this.select.feature)
             this.infoBoxVisible = true
           }else{
             this.$message({
@@ -2370,6 +2798,7 @@ export default {
             if (res.data && res.data.list && res.data.list.length > 0) {
               this.selectModel.detail = res.data.list[0]
               this.infoBoxVisible = true
+              console.log(this.selectModel)
             }else{
               this.$message({
                 message: '未获取到详细信息！',
@@ -2382,23 +2811,82 @@ export default {
     },
     changeSceneMode(mode){
       this.$refs.modeSwitch.dType = mode;
-    }
+    },
+    /**
+     * @description: 高德坐标、84坐标的对比
+     * @param {type} 
+     * @return: 
+     */
+    coordsCompare () {
+      const viewer = this.viewer
+      let gdPoint = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(113.815409, 34.78824),
+        point: {
+          pixelSize: 10,
+          color: Cesium.Color.WHITE,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 1,
+          heightReference: Cesium.HeightReference.NONE
+        }
+      })
+      let wgs84Coord = this.gcj02towgs84(113.815409, 34.78824)
+      console.log(wgs84Coord)
+      let wgs84Point = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(wgs84Coord[0], wgs84Coord[1]),
+        point: {
+          pixelSize: 10,
+          color: Cesium.Color.RED,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 1,
+          heightReference: Cesium.HeightReference.NONE
+        }
+      })
+      viewer.zoomTo(gdPoint)
+    },
+    // 3dtile 移动
+    startOffset (offsetAxis, flag) {
+      let stepArr, tans
+      this.unitStep = this.unitStep || '1'
+      let step = flag === 'plus' ? parseFloat(this.unitStep) : -parseFloat(this.unitStep)
 
+      if (offsetAxis === 'x') {
+        stepArr = Cesium.Cartesian3.fromArray([step, 0, 0])
+      } else if (offsetAxis === 'y') {
+        stepArr = Cesium.Cartesian3.fromArray([0, step, 0])
+      } else if (offsetAxis === 'z') {
+        stepArr = Cesium.Cartesian3.fromArray([0, 0, step])
+      }
+      let tilesetArr = Cesium.Cartesian3.fromArray([
+        this.tileset.modelMatrix[12],
+        this.tileset.modelMatrix[13],
+        this.tileset.modelMatrix[14]
+      ])
+      let trans = Cesium.Cartesian3.add(tilesetArr, stepArr, new Cesium.Cartesian3())
+      this.tileset.modelMatrix = Cesium.Matrix4.fromTranslation(trans)
+
+      if (!Cesium.defined(this.sumTrans)) {
+        this.sumTrans = Cesium.Cartesian3.fromArray([0, 0, 0])
+      }
+      this.sumTrans =  Cesium.Cartesian3.add(this.sumTrans, stepArr, new Cesium.Cartesian3())
+      this.sumOffset = `x: ${this.sumTrans.x}, y: ${this.sumTrans.y}, z: ${this.sumTrans.z}`
+    }
   },
   watch: {
     sceneMode(){
-      console.log(this.sceneMode)
+      if (this.layer) {
+        this.getCompLayer(this.layer)
+      }
       if(window.parent.popHome){
         window.parent.popHome.sceneMode = this.sceneMode;
       }
-    },
+    },    
     windowPosition (val) {
       if (val) {
         if (this.infoBoxVisible) {
           let infobox = this.$el.getElementsByClassName("infobox-outer")[0]
           if (infobox) {
             infobox.style.left = val.x + 50 + 'px'
-            infobox.style.top = val.y  - infobox.offsetHeight * 0.85 + 'px'
+            infobox.style.top = val.y  - infobox.offsetHeight * 0.65 + 'px'
           }
         } 
       } else {
@@ -2429,7 +2917,7 @@ export default {
   position: absolute;
   left: 10px;
   top: 10px;
-  display: none;  /* 打包时显示 */
+  display: block;  /* 打包时显示 */
 }
 .camera-info {
   position: absolute;
@@ -2534,6 +3022,11 @@ export default {
 .custom_box .footer {
   text-align: center;
   margin-top: 10px;
+}
+.reposition {
+  position: absolute;
+  left: 0;
+  bottom: 50px;
 }
 </style>
 

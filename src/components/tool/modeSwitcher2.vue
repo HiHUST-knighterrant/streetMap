@@ -1,7 +1,7 @@
 <!--
  * @Author: xiongqianqian
  * @Date: 2020-07-09 10:40:18
- * @LastEditTime: 2020-07-09 14:36:39
+ * @LastEditTime: 2020-07-30 09:49:25
  * @LastEditors: Please set LastEditors
  * @Description: 基于cesium的二三维转换
  * @FilePath: \cesium-vue-test\src\components\tool\modeSwitcher2.vue
@@ -55,7 +55,7 @@ export default {
         })
         // 显示影像图
         this.$parent.sitelliteMap.show = true
-        this.$parent.customMap.show = true
+        // this.$parent.customMap.show = true
         this.$parent.labelMap.show = false
         this.$parent.vectorMap.show = false
         this.$parent.sceneMode = '3D';
@@ -79,7 +79,7 @@ export default {
         this.$parent.vectorMap.show = true
         this.$parent.labelMap.show = true
         this.$parent.sitelliteMap.show = false
-        this.$parent.customMap.show = false
+        // this.$parent.customMap.show = false
         this.$parent.sceneMode = '2D';
         // 隐藏三维指南针
         document.getElementById('navigationDiv').style.display = 'none'
