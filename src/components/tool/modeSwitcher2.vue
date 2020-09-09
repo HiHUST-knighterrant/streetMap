@@ -1,7 +1,7 @@
 <!--
  * @Author: xiongqianqian
  * @Date: 2020-07-09 10:40:18
- * @LastEditTime: 2020-07-30 09:49:25
+ * @LastEditTime: 2020-09-09 09:22:27
  * @LastEditors: Please set LastEditors
  * @Description: 基于cesium的二三维转换
  * @FilePath: \cesium-vue-test\src\components\tool\modeSwitcher2.vue
@@ -54,9 +54,10 @@ export default {
           }
         })
         // 显示影像图
+        console.log(this.$parent.sitelliteMap)
         this.$parent.sitelliteMap.show = true
         // this.$parent.customMap.show = true
-        this.$parent.labelMap.show = false
+        // this.$parent.labelMap.show = false
         this.$parent.vectorMap.show = false
         this.$parent.sceneMode = '3D';
         command = this.sceneModePicker.viewModel.morphTo3D
@@ -75,9 +76,11 @@ export default {
         this.$parent.viewer.camera.setView({
           destination: Cesium.Rectangle.fromDegrees(extent.west, extent.south, extent.east, extent.north)
         })
-        // 显示天地图矢量地图
+        // 显示矢量地图
         this.$parent.vectorMap.show = true
-        this.$parent.labelMap.show = true
+        if (this.$parent.labelMap) {
+          this.$parent.labelMap.show = true
+        }
         this.$parent.sitelliteMap.show = false
         // this.$parent.customMap.show = false
         this.$parent.sceneMode = '2D';

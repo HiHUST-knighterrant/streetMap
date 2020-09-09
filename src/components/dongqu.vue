@@ -32,256 +32,271 @@
       <div class="infobox-outer" v-if="infoBoxVisible">
         <div class="infobox-inner">
           <div class="header">
-          <div class="title">详情</div>
-          <div class="close" @click="closeInfoBox">×</div>
-        </div>
-        <div class="content">
-          <table v-if="select.feature && select.feature.detail">
-            <tr>
-              <td class="key">名称</td>
-              <td>{{ select.feature.detail.orgName || '-'}}</td>
-            </tr>
-            <tr>
-              <td class="key">统一社会信用代码</td>
-              <td>{{ select.feature.detail.socialCode || '-' }}</td>
-            </tr>
-            <tr>
-              <td class="key">组织类型</td>
-              <td>{{ select.feature.detail.orgType || '-'}}</td>
-            </tr>
-            <tr>
-              <td class="key">所属机构</td>
-              <td>{{ (select.feature.detail.orgOfficeCode != undefined&&select.feature.detail.orgOfficeCode.officeName!=undefined)?select.feature.detail.orgOfficeCode.officeName:'' }}</td>
-            </tr>
-            <tr>
-              <td class="key">法定代表人</td>
-              <td>{{ select.feature.detail.legalPerson || '-'}}</td>
-            </tr>
-            <tr>
-              <td class="key">成立日期</td>
-              <td>{{ select.feature.detail.createDate || '-'}}</td>
-            </tr>
-            <tr>
-              <td class="key">营业期限</td>
-              <td>{{ formatIsLong(select.feature.detail.isLong,select.feature.detail.businessBegins,select.feature.detail.businessEnds)}}</td>
-            </tr>
-            <tr>
-              <td class="key">注册地址</td>
-              <td>{{ select.feature.detail.address || '-'}}</td>
-            </tr>
-            <tr>
-              <td class="key">经营范围</td>
-              <td>{{ select.feature.detail.businessScope || '-'}}</td>
-            </tr>
-          </table>
-          <div  v-else-if="selectModel && selectModel.detail">
-            <table>
+            <div class="title">详情</div>
+            <div class="close" @click="closeInfoBox">×</div>
+          </div>
+          <div class="content">
+            <table v-if="select.feature && select.feature.detail">
               <tr>
-                <td class="key">大类</td>
-                <td>{{ selectModel.detail.bigName || '-'}}</td>
+                <td class="key">名称</td>
+                <td>{{ select.feature.detail.orgName || '-'}}</td>
               </tr>
               <tr>
-                <td class="key">小类</td>
-                <td>{{ selectModel.detail.componentName || '-'}}</td>
+                <td class="key">统一社会信用代码</td>
+                <td>{{ select.feature.detail.socialCode || '-' }}</td>
               </tr>
               <tr>
-                <td class="key">状态</td>
-                <td>{{ selectModel.detail.componentStatusName || '-'}}</td>
+                <td class="key">组织类型</td>
+                <td>{{ select.feature.detail.orgType || '-'}}</td>
               </tr>
               <tr>
                 <td class="key">所属机构</td>
-                <td>{{ selectModel.detail.areaName || '-'}}</td>
+                <td>{{ (select.feature.detail.orgOfficeCode != undefined&&select.feature.detail.orgOfficeCode.officeName!=undefined)?select.feature.detail.orgOfficeCode.officeName:'' }}</td>
               </tr>
               <tr>
-                <td class="key">所在地址</td>
-                <td>{{ selectModel.detail.address || '-'}}</td>
+                <td class="key">法定代表人</td>
+                <td>{{ select.feature.detail.legalPerson || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">成立日期</td>
+                <td>{{ select.feature.detail.createDate || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">营业期限</td>
+                <td>{{ formatIsLong(select.feature.detail.isLong,select.feature.detail.businessBegins,select.feature.detail.businessEnds)}}</td>
+              </tr>
+              <tr>
+                <td class="key">注册地址</td>
+                <td>{{ select.feature.detail.address || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">经营范围</td>
+                <td>{{ select.feature.detail.businessScope || '-'}}</td>
               </tr>
             </table>
-            <!-- <table v-else-if="selectModel.properties.CompName && selectModel.properties.CompName.indexOf('井盖') === -1">
-              <tr>
-                <td class="key">名称</td>
-                <td>{{ selectModel.properties.CompName }}</td>
-              </tr>
-              <tr>
-                <td class="key">类型</td>
-                <td>{{ selectModel.properties.ChildType || '楸树' }}</td>
-              </tr>
-              <tr>
-                <td class="key">状态</td>
-                <td>{{ selectModel.properties.status || '完好'}}</td>
-              </tr>
-            </table>
-            <table v-else-if="selectModel.properties.ObjName">
-              <tr>
-                <td class="key">名称</td>
-                <td>{{ selectModel.properties.ObjName }}</td>
-              </tr>
-              <tr>
-                <td class="key">所属机构</td>
-                <td>{{ selectModel.properties.DeptName1 || '无' }}</td>
-              </tr>
-              <tr>
-                <td class="key">状态</td>
-                <td>{{ selectModel.properties.ObjState || '完好'}}</td>
-              </tr>
-              <tr>
-                <td class="key">位置</td>
-                <td>{{ selectModel.properties.ObjPos || '无'}}</td>
-              </tr>
-            </table>  -->
-          </div> 
-          <div v-else-if="selectEntity && selectEntity.name === 'person'" >
-            <div>
+            <div  v-else-if="selectModel && selectModel.detail">
               <table>
                 <tr>
-                  <td class="key">名称</td>
-                  <td>{{  selectEntity.property.userName || '-'}}</td>
+                  <td class="key">大类</td>
+                  <td>{{ selectModel.detail.bigName || '-'}}</td>
+                </tr>
+                <tr>
+                  <td class="key">小类</td>
+                  <td>{{ selectModel.detail.componentName || '-'}}</td>
+                </tr>
+                <tr>
+                  <td class="key">状态</td>
+                  <td>{{ selectModel.detail.componentStatusName || '-'}}</td>
+                </tr>
+                <tr>
+                  <td class="key">所属机构</td>
+                  <td>{{ selectModel.detail.areaName || '-'}}</td>
+                </tr>
+                <tr>
+                  <td class="key">所在地址</td>
+                  <td>{{ selectModel.detail.address || '-'}}</td>
                 </tr>
               </table>
+              <!-- <table v-else-if="selectModel.properties.CompName && selectModel.properties.CompName.indexOf('井盖') === -1">
+                <tr>
+                  <td class="key">名称</td>
+                  <td>{{ selectModel.properties.CompName }}</td>
+                </tr>
+                <tr>
+                  <td class="key">类型</td>
+                  <td>{{ selectModel.properties.ChildType || '楸树' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">状态</td>
+                  <td>{{ selectModel.properties.status || '完好'}}</td>
+                </tr>
+              </table>
+              <table v-else-if="selectModel.properties.ObjName">
+                <tr>
+                  <td class="key">名称</td>
+                  <td>{{ selectModel.properties.ObjName }}</td>
+                </tr>
+                <tr>
+                  <td class="key">所属机构</td>
+                  <td>{{ selectModel.properties.DeptName1 || '无' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">状态</td>
+                  <td>{{ selectModel.properties.ObjState || '完好'}}</td>
+                </tr>
+                <tr>
+                  <td class="key">位置</td>
+                  <td>{{ selectModel.properties.ObjPos || '无'}}</td>
+                </tr>
+              </table>  -->
+            </div> 
+            <div v-else-if="selectEntity && selectEntity.name === 'person'" >
+              <div>
+                <table>
+                  <tr>
+                    <td class="key">名称</td>
+                    <td>{{  selectEntity.property.userName || '-'}}</td>
+                  </tr>
+                </table>
+              </div>
+              <div class="footer">
+                <el-button type="primary"
+                      @click="personTrack()"
+                      size="mini">历史轨迹</el-button>
+                <el-button type="primary"
+                          @click="personCall()"
+                          size="mini">语音通话</el-button>
+              </div>
             </div>
-            <div class="footer">
-              <el-button type="primary"
-                    @click="personTrack()"
-                    size="mini">历史轨迹</el-button>
-              <el-button type="primary"
-                        @click="personCall()"
-                        size="mini">语音通话</el-button>
+            <div v-else-if="selectEntity && selectEntity.name === 'video'" >
+              <table>
+                <tr>
+                  <td class="key">类型</td>
+                  <td>{{ selectEntity.property.videoType || '-' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">类别</td>
+                  <td>{{ selectEntity.property.cameraType || '-' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">机构</td>
+                  <td>{{ selectEntity.property.publicOffice.officeName }}</td>
+                </tr>
+                <tr>
+                  <td class="key">路段</td>
+                  <td>{{ selectEntity.property.publicOffice.roadName ?  selectEntity.property.publicOffice.roadName : '-'}}</td>
+                </tr>
+                <tr>
+                  <td class="key">状态</td>
+                  <td>{{ selectEntity.property.isOnline == 1 ? '在线' : '离线' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">地址</td>
+                  <td>{{ selectEntity.property.address }}</td>
+                </tr>
+              </table>
+              <div class="footer">
+                <el-button type="primary" @click="showVideo(selectEntity.property.id)" size="mini">查看监控</el-button>
+              </div>
+            
             </div>
-          </div>
-          <div v-else-if="selectEntity && selectEntity.name === 'video'" >
-            <table>
+            <div v-else-if="selectEntity && selectEntity.name === 'car'" >
+              <table>
+                <tr>
+                  <td class="key">车牌号</td>
+                  <td>{{ selectEntity.property.carNo || '-' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">型号</td>
+                  <td>{{ selectEntity.property.model || '-' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">颜色</td>
+                  <td>{{ selectEntity.property.color || '-' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">品牌</td>
+                  <td>{{ selectEntity.property.brand || '-' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">用途分类</td>
+                  <td>{{ selectEntity.property.typeName || '-'}}</td>
+                </tr>
+                <tr>
+                  <td class="key">注册日期</td>
+                  <td>{{ selectEntity.property.createDate || '-' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">发证日期</td>
+                  <td>{{ selectEntity.property.issuedate || '-' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">车辆识别代码</td>
+                  <td>{{ selectEntity.property.vin || '-' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">发动机号码</td>
+                  <td>{{ selectEntity.property.engine || '-' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">车辆所属单位</td>
+                  <td>{{ selectEntity.property.company || '-' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">车主地址</td>
+                  <td>{{ selectEntity.property.address || '-' }}</td>
+                </tr>
+                <tr>
+                  <td class="key">更新时间</td>
+                  <td>{{ selectEntity.property.updateDate }}</td>
+                </tr>
+              </table>
+              <div class="footer">
+                <el-button type="primary" @click="carTrack()" size="mini">历史轨迹</el-button>
+                <el-button type="primary" @click="carCall()" size="mini">语音通话</el-button>
+              </div>
+            </div>
+            <div v-else-if="selectEntity && selectEntity.name === 'case'">
               <tr>
-                <td class="key">类型</td>
-                <td>{{ selectEntity.property.videoType || '-' }}</td>
+                <td class="key">名称</td>
+                <td>{{ selectEntity.property.objName }}</td>
               </tr>
               <tr>
-                <td class="key">类别</td>
-                <td>{{ selectEntity.property.cameraType || '-' }}</td>
+                <td class="key">编号</td>
+                <td>{{ selectEntity.property.eventCode }}</td>
               </tr>
               <tr>
-                <td class="key">机构</td>
-                <td>{{ selectEntity.property.publicOffice.officeName }}</td>
+                <td class="key">办事处</td>
+                <td>{{ selectEntity.property.streetName || '-' }}</td>
+              </tr>
+              <tr>
+                <td class="key">社区</td>
+                <td>{{ selectEntity.property.communityName || '-' }}</td>
               </tr>
               <tr>
                 <td class="key">路段</td>
-                <td>{{ selectEntity.property.publicOffice.roadName ?  selectEntity.property.publicOffice.roadName : '-'}}</td>
+                <td>{{ selectEntity.property.roadSectionName || '-' }}</td>
               </tr>
               <tr>
-                <td class="key">状态</td>
-                <td>{{ selectEntity.property.isOnline == 1 ? '在线' : '离线' }}</td>
+                <td class="key">案件来源</td>
+                <td>{{ selectEntity.property.eventSourceName }}</td>
               </tr>
               <tr>
-                <td class="key">地址</td>
-                <td>{{ selectEntity.property.address }}</td>
-              </tr>
-            </table>
-            <div class="footer">
-              <el-button type="primary" @click="showVideo(selectEntity.property.id)" size="mini">查看监控</el-button>
-            </div>
-           
-          </div>
-          <div v-else-if="selectEntity && selectEntity.name === 'car'" >
-            <table>
-              <tr>
-                <td class="key">车牌号</td>
-                <td>{{ selectEntity.property.carNo || '-' }}</td>
+                <td class="key">案件类型/大</td>
+                <td>{{ selectEntity.property.bigClassName }}</td>
               </tr>
               <tr>
-                <td class="key">型号</td>
-                <td>{{ selectEntity.property.model || '-' }}</td>
+                <td class="key">案件类型/小</td>
+                <td>{{ selectEntity.property.smallClassName }}</td>
               </tr>
               <tr>
-                <td class="key">颜色</td>
-                <td>{{ selectEntity.property.color || '-' }}</td>
+                <td class="key">上报时间</td>
+                <td>{{ formatTime(selectEntity.property.uploadTime) }}</td>
               </tr>
               <tr>
-                <td class="key">品牌</td>
-                <td>{{ selectEntity.property.brand || '-' }}</td>
+                <td class="key">地址描述</td>
+                <td>{{ selectEntity.property.objPosition }}</td>
               </tr>
-              <tr>
-                <td class="key">用途分类</td>
-                <td>{{ selectEntity.property.typeName || '-'}}</td>
-              </tr>
-              <tr>
-                <td class="key">注册日期</td>
-                <td>{{ selectEntity.property.createDate || '-' }}</td>
-              </tr>
-              <tr>
-                <td class="key">发证日期</td>
-                <td>{{ selectEntity.property.issuedate || '-' }}</td>
-              </tr>
-              <tr>
-                <td class="key">车辆识别代码</td>
-                <td>{{ selectEntity.property.vin || '-' }}</td>
-              </tr>
-              <tr>
-                <td class="key">发动机号码</td>
-                <td>{{ selectEntity.property.engine || '-' }}</td>
-              </tr>
-              <tr>
-                <td class="key">车辆所属单位</td>
-                <td>{{ selectEntity.property.company || '-' }}</td>
-              </tr>
-              <tr>
-                <td class="key">车主地址</td>
-                <td>{{ selectEntity.property.address || '-' }}</td>
-              </tr>
-              <tr>
-                <td class="key">更新时间</td>
-                <td>{{ selectEntity.property.updateDate }}</td>
-              </tr>
-            </table>
-            <div class="footer">
-              <el-button type="primary" @click="carTrack()" size="mini">历史轨迹</el-button>
-              <el-button type="primary" @click="carCall()" size="mini">语音通话</el-button>
             </div>
           </div>
-          <div v-else-if="selectEntity && selectEntity.name === 'case'">
-            <tr>
-              <td class="key">名称</td>
-              <td>{{ selectEntity.property.objName }}</td>
-            </tr>
-            <tr>
-              <td class="key">编号</td>
-              <td>{{ selectEntity.property.eventCode }}</td>
-            </tr>
-            <tr>
-              <td class="key">办事处</td>
-              <td>{{ selectEntity.property.streetName || '-' }}</td>
-            </tr>
-            <tr>
-              <td class="key">社区</td>
-              <td>{{ selectEntity.property.communityName || '-' }}</td>
-            </tr>
-            <tr>
-              <td class="key">路段</td>
-              <td>{{ selectEntity.property.roadSectionName || '-' }}</td>
-            </tr>
-            <tr>
-              <td class="key">案件来源</td>
-              <td>{{ selectEntity.property.eventSourceName }}</td>
-            </tr>
-            <tr>
-              <td class="key">案件类型/大</td>
-              <td>{{ selectEntity.property.bigClassName }}</td>
-            </tr>
-            <tr>
-              <td class="key">案件类型/小</td>
-              <td>{{ selectEntity.property.smallClassName }}</td>
-            </tr>
-            <tr>
-              <td class="key">上报时间</td>
-              <td>{{ formatTime(selectEntity.property.uploadTime) }}</td>
-            </tr>
-            <tr>
-              <td class="key">地址描述</td>
-              <td>{{ selectEntity.property.objPosition }}</td>
-            </tr>
-          </div>
-        </div>
         </div>
       </div>
- 
+      <div class="bindbox-outer" v-else-if="bindPromptVisible">
+        <div class="bindbox-inner">
+          <div class="header">
+            <div class="title">绑定提示</div>
+            <div class="close" @click="closeBindPrompt">×</div>
+          </div>
+          <div class="content">
+            <table>
+              <tr>
+                <td class="key">模型id</td>
+                <td>{{ bindId }}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
       <!-- 自定义的车辆轨迹弹出框 -->
       <div class="custom_box" v-if="carTrackVisible" style="top: 200px">
         <div class="header">
@@ -319,12 +334,12 @@
             </div> -->
           <div class="footer">
             <el-button type="primary" @click="carTrackShow()" size="mini">查看轨迹</el-button>
-            <el-button type="primary" @click="carPathPlay()" size="mini">播放</el-button>
+            <!-- <el-button type="primary" @click="carPathPlay()" size="mini">播放</el-button>
             <el-button type="primary" @click="fastForward()" size="mini">快进</el-button>
             <el-button type="primary" @click="fastBack()" size="mini">快退</el-button>
             <el-button type="primary" @click="carPathReplay()" size="mini">重放</el-button>
             <el-button type="primary" @click="carChangeSpeed(30)" size="mini">改变速度</el-button>
-            <el-button type="primary" @click="carTrackExit()" size="mini">退出播放</el-button>
+            <el-button type="primary" @click="carTrackExit()" size="mini">退出播放</el-button> -->
           </div>
         </div>
       </div>
@@ -429,7 +444,7 @@ import BasemapSwitcher from './tool/basemapSwitcher'
 // 建筑模型--部件数据
 // import compData from '../../static/SampleData/comp.json' 
 // 三维单体化数据
-import componentDataClamped from '../../static/SampleData/point.json'
+// import compData from '../../static/SampleData/point.json'
 import compData from '../../static/SampleData/3dComp.json'
 import BuildingData from '../../static/SampleData/3dBuilding.json'
 import orgData from '../../static/SampleData/3dOrg.json'
@@ -463,6 +478,7 @@ export default {
       selectEntity: null,
       tileset: null,
       direction: '',
+      cameraInfo: null, // 对象
       currentCamera: '', //当前相机参数
       layer: '',
       confirmVisible: false,
@@ -473,7 +489,7 @@ export default {
       carTrackVisible: false,
       carPlaySpeed: 5,
       carStartTime: undefined,
-      carEndTime: new Date(),
+      carEndTime: undefined,
       carPathData: undefined,
       currentCar: '豫A0603R',
       drawEntity: undefined,
@@ -507,7 +523,9 @@ export default {
       carPassPath: [],
       sceneMode: '', // 维度模式
       unitStep: '',
-      sumOffset: ''
+      sumOffset: '',
+      bindId: '', // 数据绑定的id
+      bindPromptVisible: '', // 绑定提示弹框的可见性
     }
   },
   mounted () {
@@ -607,9 +625,10 @@ export default {
 
       // this.addCBasicMap()
       this.addCSitelliteMap()
-      this.addCVectorMap()
+      this.addMapboxVectorMap()
+      // this.addCVectorMap()
       this.directLocation()
-      this.addCustomMap()
+      // this.addCustomMap()
       this.load3DTile()
     },
     /**
@@ -705,6 +724,18 @@ export default {
       this.labelMap.title = 'labelMap'
       this.viewer.imageryLayers.add(this.labelMap)
     },
+    addMapboxVectorMap () {
+      this.vectorMap = this.viewer.imageryLayers.addImageryProvider(
+        new Cesium.MapboxStyleImageryProvider({
+          url: 'https://api.mapbox.com/styles/v1/',
+          username: 'xiongqianqian',
+          styleId: 'ckesaim5u1txc19uip9r5l9f1',
+          accessToken: 'pk.eyJ1IjoieGlvbmdxaWFucWlhbiIsImEiOiJjazVrYzNidzQwY2xsM2xqb2pqNTR6c2huIn0.NbOIQI9qF4winz6jY3FZOw'
+        })
+      )
+      this.vectorMap.title = 'mapboxVectorMap'
+      this.vectorMap.show = false
+    },
     /**
      * @description: 添加自定义的影像图
      * @param {type} 
@@ -767,6 +798,7 @@ export default {
         pitch: Cesium.Math.toDegrees(this.viewer.scene.camera.pitch),
         roll: Cesium.Math.toDegrees(this.viewer.scene.camera.roll)
       }
+      this.cameraInfo = cameraInfo
       this.currentCamera = `经度: ${cameraInfo.longitude}° 纬度: ${cameraInfo.latitude}° 高度: ${cameraInfo.height} 航偏角: ${cameraInfo.heading}° 俯仰角: ${cameraInfo.pitch}° 翻滚角: ${cameraInfo.roll}°`
     },
     /**
@@ -1042,10 +1074,10 @@ export default {
      */
     load3DTile () {
       const viewer = this.viewer
-      
       // 添加3dTile数据
       this.tileset = new Cesium.Cesium3DTileset({
-        url: "http://192.168.1.127:9000/model/ed744fa0e2a711eaafe4933aaa75cd5b/tileset.json",
+        url: this.GLOBAL.baseOrigin+"/3dTiles/tileset.json",
+        // url: 'http://dev.hnzwdz.com/3dTiles/tileset.json'
         // maximumScreenSpaceError: 2,
         // skipScreenSpaceErrorFactor: 16
       })
@@ -1065,7 +1097,8 @@ export default {
         this.tileset.modelMatrix[13],
         this.tileset.modelMatrix[14]
       ])
-      let center = Cesium.Cartesian3.add(tilesetArr, Cesium.Cartesian3.fromArray([22.1, -48.7, -36.0]), new Cesium.Cartesian3())
+      // let center = Cesium.Cartesian3.add(tilesetArr, Cesium.Cartesian3.fromArray([22.1, -48.7, -36.0]), new Cesium.Cartesian3())
+      let center = Cesium.Cartesian3.add(tilesetArr, Cesium.Cartesian3.fromArray([21.6, -48.3, -36.9]), new Cesium.Cartesian3())
       let m = Cesium.Matrix4.fromTranslation(center)
       this.tileset.modelMatrix = m
   
@@ -1083,7 +1116,7 @@ export default {
       // 添加倾斜摄影的单体数据——建筑物
       BuildingData.features.forEach(feature => {
         const instance = new Cesium.GeometryInstance({
-          id: `building-${feature.properties.ORIG_FID}`,
+          id: feature.properties.id,
           geometry: new Cesium.PolygonGeometry.fromPositions({
             positions: Cesium.Cartesian3.fromDegreesArray([].concat.apply([], feature.geometry.coordinates[0][0])),
             extrudedHeight: 100,
@@ -1104,9 +1137,9 @@ export default {
       orgData.features.forEach(feature => {
         let minHeight = feature.properties.minHeight
         let maxHeight = feature.properties.maxHeight
-        const id = feature.properties.OBJECTID
+        const id = feature.properties.id
         const instance = new Cesium.GeometryInstance({
-          id:  `org-${id}`,
+          id:  id,
           geometry: new Cesium.WallGeometry({
             positions: Cesium.Cartesian3.fromDegreesArray([].concat.apply([], feature.geometry.coordinates[0])),
             granularity: 5,
@@ -1149,7 +1182,7 @@ export default {
       let shumuInstances = []
       let jinggaiInstances = []
       let ludengInstances = []
-      componentDataClamped.features.forEach(feature => {
+      compData.features.forEach(feature => {
         const id = feature.properties.id
         const compName = feature.properties.名称
         let clampedCartesian = feature.properties.clampedCartesian
@@ -1166,7 +1199,7 @@ export default {
           scale = 2.5
           modelMatrix = this.cartesianToMatrix4(cartesian, scale, rotateDegree)
           const instance = {
-            batchId: `component-${id}-jinggai`,
+            batchId: `${id}_jinggai`,
             modelMatrix: modelMatrix
           }
           switch (compName) {
@@ -1208,7 +1241,7 @@ export default {
           rotateDegree = feature.properties.angle
           modelMatrix = this.cartesianToMatrix4(cartesian, scale, rotateDegree)
           const instance = {
-            batchId: `component-${id}-lajitong`,
+            batchId: `${id}_lajitong`,
             modelMatrix: modelMatrix
           }
           lajitongInstances.push(instance)
@@ -1216,7 +1249,7 @@ export default {
           scale = 1
           modelMatrix = this.cartesianToMatrix4(cartesian, scale)
           const instance = {
-            batchId: `component-${id}-shumu`,
+            batchId: `${id}_shumu`,
             modelMatrix: modelMatrix
           }
           shumuInstances.push(instance)
@@ -1225,7 +1258,7 @@ export default {
           rotateDegree = feature.properties.angle
           modelMatrix = this.cartesianToMatrix4(cartesian, scale, rotateDegree)
           const instance = {
-            batchId: `component-${id}-ludeng`,
+            batchId: `${id}_ludeng`,
             modelMatrix: modelMatrix
           }
           ludengInstances.push(instance)
@@ -1679,7 +1712,6 @@ export default {
 
       viewer.screenSpaceEventHandler.setInputAction(e =>{
         const picked = viewer.scene.pick(e.position)
-        console.log(picked)
         if (!Cesium.defined(picked) || picked.primitive instanceof Cesium.Cesium3DTileset) return
         if (Cesium.defined(this.select.feature) && Cesium.defined(this.select.feature.primitive)) {
           if (picked.id === this.select.feature.id) return
@@ -1705,7 +1737,7 @@ export default {
           let centerCartesian =  new Cesium.Cartesian3(matrix[12], matrix[13], matrix[14])
 
           Cesium.Matrix4.multiplyByMatrix3(matrix, boxRotate, matrix)
-          const type = this.selectModel.instanceId.split('-')[2]
+          const type = this.selectModel.instanceId.split('_')[1]
           let box
           switch (type) {
             case 'shumu':
@@ -1734,8 +1766,8 @@ export default {
             releaseGeometryInstances: false
           }))
           this.initInfobox(centerCartesian)
-          const id = parseInt(this.selectModel.instanceId.split('-')[1])
-          const param = {modelId: 170}
+          const id = this.selectModel.instanceId.split('_')[0]
+          const param = {modelId: id}
           this.getSingleDetail(param, 'model_part')
           return
         }
@@ -1746,7 +1778,6 @@ export default {
           let centerCartesian = this.selectEntity.position.getValue()
           this.initInfobox(centerCartesian)
           this.infoBoxVisible = true
-          console.log(this.infoBoxVisible)
           if (this.selectEntity.name === 'shop') {
             this.select.feature = {};
             this.select.feature.detail = this.selectEntity.property
@@ -1763,29 +1794,30 @@ export default {
             attributes.color = [255, 255, 0, 128]
             attributes.show = [1]
             // 获取其详情信息
-            const buildingId =  parseInt(picked.id.split('-')[1])
-            let feature = BuildingData.features.find(feature => feature.properties.ORIG_FID === buildingId)
+            const buildingId =  picked.id
+            let feature = BuildingData.features.find(feature => feature.properties.id === buildingId)
             
             let centerCartesian = Cesium.Cartesian3.fromDegrees(feature.properties.center_lon, feature.properties.center_lat)
             // 显示信息框
             this.initInfobox(centerCartesian)
-            const param =  {modelId: 'dqjz72'} // ==============参数待修改
+            // const param =  {modelId: 'dqjz72'} 
+            const param =  {modelId: buildingId} 
             this.getSingleDetail(param, 'model_shop')
+            
           } else if (pickedGeom instanceof Cesium.WallGeometry) {
             this.select.feature = picked
-            console.log(picked)
             let attributes = picked.primitive.getGeometryInstanceAttributes(picked.id)
             attributes.color = [255, 255, 0, 128]
             attributes.show = [1]
-            const orgId =  parseInt(picked.id.split('-')[1])
-            let feature = orgData.features.find(feature => feature.properties.OBJECTID === orgId)
-            console.log(feature)
+            const orgId =  picked.id
+            let feature = orgData.features.find(feature => feature.properties.id === orgId)
             // 计算中心点坐标
             let height = picked.primitive.geometryInstances.geometry._maximumHeights[0]
             let centerCartesian = Cesium.Cartesian3.fromDegrees(feature.properties.center_lon, feature.properties.center_lat, height)
             // 显示信息框
             this.initInfobox(centerCartesian)
-            const param =  {modelId: 'dqjz72'}
+            // const param =  {modelId: 'dqjz72'}
+            const param =  {modelId: orgId}
             this.getSingleDetail(param,'model_shop')
           }
         }
@@ -2141,6 +2173,8 @@ export default {
       this.infoBoxVisible = false
       this.carTrackVisible = true
       // 初始化时间
+      this.carEndTime = new Date()
+      console.log(this.carEndTime)
       const times = this.carEndTime.getTime() - 24 * 60 * 60 * 1000
       this.carStartTime = new Date(times) 
     },
@@ -2148,7 +2182,7 @@ export default {
     carTrackShow () {
       const viewer = this.viewer
       this.carInfoVisible = false
-      // this.carTrackVisible = false // 打包时显示
+      this.carTrackVisible = false // 打包时显示
       
       // 判断输入时间和结束时间是否正确
       if (!this.carStartTime || !this.carEndTime) {
@@ -2167,9 +2201,7 @@ export default {
             return
           } else {
             let fullPath
-            if (fullPath = viewer.entities.getById('CarFullPath')) {
-              return
-            }
+            viewer.entities.remove(viewer.entities.getById('CarFullPath'))
             this.handleClose()
             let path = res.data
             let pathMove = []
@@ -2182,6 +2214,10 @@ export default {
                 pathMove.push(path[i])
                 pathArr.push(Cesium.Cartesian3.fromDegrees(point[0], point[1]))
               }
+            }
+            if (pathArr.length === 0) {
+              this.$message({ message: '车辆在该时段内未移动', type: 'warning'})
+              return
             }
             fullPath = this.viewer.entities.add({
               name: "CarFullPath",
@@ -2196,8 +2232,9 @@ export default {
             })
             this.carPathData = pathMove
             viewer.zoomTo(fullPath)
+
             // 仪表盘显示
-            // window.parent.popHome.updateCarMeterStatus(true, this.selectEntity.property) // 打包时显示
+            window.parent.popHome.updateCarMeterStatus(true, this.selectEntity.property) // 打包时显示
           }
         })
       })
@@ -2332,7 +2369,7 @@ export default {
         let carDirection = moveEntity.properties.direction.getValue(viewer.clock.currentTime)
         // let carDistance =  moveEntity.properties.distance.getValue(currentTime).toFixed(2)
         // 向父页面传递车速、方向
-        // window.parent.popHome.updateCarMeterInfo(carSpeed, carDirection) // 打包时显示
+        window.parent.popHome.updateCarMeterInfo(carSpeed, carDirection) // 打包时显示
         // let carMoveInfoBox = this.$el.getElementsByClassName('carMoveInfoBox')[0]
         // carMoveInfoBox.style.display = "block"
         // let cartesian =  moveEntity.position.getValue(currentTime)
@@ -2784,12 +2821,16 @@ export default {
           if (res.data && res.data.list && res.data.list.length > 0) {
             this.select.feature.detail = res.data.list[0]
             console.log(this.select.feature)
+            this.bindPromptVisible = false
             this.infoBoxVisible = true
           }else{
             this.$message({
-              message: '未获取到详细信息！',
+              message: `未获取到详细信息，请绑定数据！`,
               type: 'warning'
             })
+            this.bindId = param.modelId
+            this.infoBoxVisible = false
+            this.bindPromptVisible = true
           }
         })
       }else if(type == 'model_part'){
@@ -2797,13 +2838,17 @@ export default {
           this.$get(url, param).then( res => {
             if (res.data && res.data.list && res.data.list.length > 0) {
               this.selectModel.detail = res.data.list[0]
+              this.bindPromptVisible = false
               this.infoBoxVisible = true
               console.log(this.selectModel)
             }else{
               this.$message({
-                message: '未获取到详细信息！',
+                message: `未获取到详细信息，请绑定数据！`,
                 type: 'warning'
               })
+              this.bindId = param.modelId
+              this.infoBoxVisible = false
+              this.bindPromptVisible = true
             }
           })
         })
@@ -2843,32 +2888,24 @@ export default {
       })
       viewer.zoomTo(gdPoint)
     },
-    // 3dtile 移动
-    startOffset (offsetAxis, flag) {
-      let stepArr, tans
-      this.unitStep = this.unitStep || '1'
-      let step = flag === 'plus' ? parseFloat(this.unitStep) : -parseFloat(this.unitStep)
-
-      if (offsetAxis === 'x') {
-        stepArr = Cesium.Cartesian3.fromArray([step, 0, 0])
-      } else if (offsetAxis === 'y') {
-        stepArr = Cesium.Cartesian3.fromArray([0, step, 0])
-      } else if (offsetAxis === 'z') {
-        stepArr = Cesium.Cartesian3.fromArray([0, 0, step])
+    /**
+     * @description: 关闭绑定提示框
+     * @param {type} 
+     * @return {type} 
+     */
+    closeBindPrompt () {
+       this.bindPromptVisible = false
+      // 移除高亮的部件点的盒子
+      this.viewer.scene.primitives.remove(this.selectModelBox)
+      // 移除高亮的org、building的颜色
+      if (Cesium.defined(this.select.feature)) {
+        let attributes = this.select.feature.primitive.getGeometryInstanceAttributes(this.select.feature.id)
+        attributes.show = [0]
+        attributes.color = [0, 0, 255, 1]
+        attributes = {}
+        this.viewer.scene.primitives.remove(this.select.feature)
+        this.select.feature = undefined
       }
-      let tilesetArr = Cesium.Cartesian3.fromArray([
-        this.tileset.modelMatrix[12],
-        this.tileset.modelMatrix[13],
-        this.tileset.modelMatrix[14]
-      ])
-      let trans = Cesium.Cartesian3.add(tilesetArr, stepArr, new Cesium.Cartesian3())
-      this.tileset.modelMatrix = Cesium.Matrix4.fromTranslation(trans)
-
-      if (!Cesium.defined(this.sumTrans)) {
-        this.sumTrans = Cesium.Cartesian3.fromArray([0, 0, 0])
-      }
-      this.sumTrans =  Cesium.Cartesian3.add(this.sumTrans, stepArr, new Cesium.Cartesian3())
-      this.sumOffset = `x: ${this.sumTrans.x}, y: ${this.sumTrans.y}, z: ${this.sumTrans.z}`
     }
   },
   watch: {
@@ -2888,7 +2925,13 @@ export default {
             infobox.style.left = val.x + 50 + 'px'
             infobox.style.top = val.y  - infobox.offsetHeight * 0.65 + 'px'
           }
-        } 
+        } else if (this.bindPromptVisible) {
+          let bindbox = this.$el.getElementsByClassName("bindbox-outer")[0]
+          if (bindbox) {
+            bindbox.style.left = val.x + 50 + 'px'
+            bindbox.style.top = val.y  - bindbox.offsetHeight * 0.65 + 'px'
+          }
+        }
       } else {
         this.infoBoxVisible = false
       }
@@ -2917,7 +2960,7 @@ export default {
   position: absolute;
   left: 10px;
   top: 10px;
-  display: block;  /* 打包时显示 */
+  display: none;  /* 打包时显示 */
 }
 .camera-info {
   position: absolute;
@@ -2983,6 +3026,60 @@ export default {
 .infobox-inner .key {
   width: 80px;
 }
+/* bind-box */
+.bindbox-outer {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  padding: 5px;
+}
+.bindbox-inner {
+  min-width: 300px;
+  max-width: 400px;
+  background: url(../../static/images/detailBox.png) no-repeat;
+  /* background-color: #003a6c; */
+  background-size: 100% 100%;
+  /* opacity: 0.8; */
+  /* filter: alpha(opacity=50); */
+  color: #ffffff;  
+  overflow: hidden;
+}
+
+.bindbox-inner .header {
+  margin-top: 20px;
+  padding: 0 12px 0 15px;
+  height: 36px;
+  line-height: 36px;
+  position: relative;
+}
+.bindbox-inner .title {
+  border-bottom: 1px solid #33a3dc;
+}
+.bindbox-inner .header .close {
+  font-size: 30px;
+  position: absolute;
+  right: 5px;
+  top: 0;
+  height: 30px;
+  width: 40px;
+  text-align: center;
+  line-height: 30px;
+  cursor: pointer;
+  color: #ffffff;
+}
+
+.bindbox-inner .content {
+  padding: 15px;
+  font-size: 13px;
+}
+.bindbox-inner .footer {
+  text-align: center;
+  margin: 10px 0;
+}
+.bindbox-inner .key {
+  width: 50px;
+}
+/* bind-box */
 .button {
   position: absolute;
   top: 10px;

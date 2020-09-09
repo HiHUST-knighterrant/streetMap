@@ -16,6 +16,7 @@ if (currentHostName == "localhost" || currentHostName == "127.0.0.1") {
   var wsUrl = "ws://dev.hnzwdz.com/jeesite-icity";
   var wmsUrl = "http://test.hnzwdz.com/geoserver/districts/wms";
   var basePath = currentOrigin;
+  var baseOrigin = currentOrigin;
 } else {
   var baseURL = currentOrigin + "/jeesite-icity/a/";
   var fileURL = currentOrigin + "/jeesite-icity";
@@ -30,6 +31,7 @@ if (currentHostName == "localhost" || currentHostName == "127.0.0.1") {
       ? "http://test.hnzwdz.com"
       : currentOrigin) + "/geoserver/districts/wms";
   var basePath = currentOrigin + "/newAdmin";
+  var baseOrigin = currentOrigin;
   var oldBasePath = currentOrigin + "/admin/";
 }
 
@@ -194,6 +196,7 @@ export default {
   wmsUrl,
   wsUrl,
   basePath,
+  baseOrigin,
   oldBasePath,
   ipHost,
   wmsPartParam,
