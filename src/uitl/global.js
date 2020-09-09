@@ -30,7 +30,7 @@ if (currentHostName == "localhost" || currentHostName == "127.0.0.1") {
       currentOrigin == "https://dev.hnzwdz.com"
       ? "http://test.hnzwdz.com"
       : currentOrigin) + "/geoserver/districts/wms";
-  var basePath = currentOrigin + "/newAdmin";
+  var basePath = currentOrigin + "/admin/";
   var baseOrigin = currentOrigin;
   var oldBasePath = currentOrigin + "/admin/";
 }

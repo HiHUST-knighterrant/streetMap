@@ -54,7 +54,6 @@ export default {
           }
         })
         // 显示影像图
-        console.log(this.$parent.sitelliteMap)
         this.$parent.sitelliteMap.show = true
         // this.$parent.customMap.show = true
         // this.$parent.labelMap.show = false

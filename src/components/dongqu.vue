@@ -525,7 +525,7 @@ export default {
       unitStep: '',
       sumOffset: '',
       bindId: '', // 数据绑定的id
-      bindPromptVisible: '', // 绑定提示弹框的可见性
+      bindPromptVisible: false, // 绑定提示弹框的可见性
     }
   },
   mounted () {
@@ -1300,6 +1300,7 @@ export default {
       this.infoBoxVisible = false
       this.carInfoVisible = false
       this.carTrackVisible = false
+      this.bindPromptVisible = false
       this.handleClose();
       this.$el.style.cursor = 'default'
       this.viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)

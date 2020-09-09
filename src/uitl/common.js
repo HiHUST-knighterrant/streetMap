@@ -611,7 +611,7 @@ function logout(that) {
     setStorage('user', null)
     setStorage('remarksList', null)
     djDelCookie('vue_admin_template_token')
-    top.location.href = that.GLOBAL.basePath + '/#/login'
+    top.location.href = that.GLOBAL.basePath + 'pr-map/#/login'
   })
 }
 
