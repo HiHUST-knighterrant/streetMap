@@ -401,12 +401,12 @@
             </div> -->
           <div class="footer">
             <el-button type="primary" @click="carTrackShow()" size="mini">查看轨迹</el-button>
-            <!-- <el-button type="primary" @click="carPathPlay()" size="mini">播放</el-button>
+            <el-button type="primary" @click="carPathPlay()" size="mini">播放</el-button>
             <el-button type="primary" @click="fastForward()" size="mini">快进</el-button>
             <el-button type="primary" @click="fastBack()" size="mini">快退</el-button>
             <el-button type="primary" @click="carPathReplay()" size="mini">重放</el-button>
             <el-button type="primary" @click="carChangeSpeed(30)" size="mini">改变速度</el-button>
-            <el-button type="primary" @click="carTrackExit()" size="mini">退出播放</el-button> -->
+            <el-button type="primary" @click="carTrackExit()" size="mini">退出播放</el-button>
           </div>
         </div>
       </div>
@@ -558,7 +558,7 @@ export default {
       personPlaySpeed: 5,
       personTrackVisible: false,
       personStartTime: undefined,
-      personEndTime: new Date('2020-07-23 11:13:26'),
+      personEndTime: undefined,
       personPathData: undefined,
       playFlag: true,
       currentPerson: '0867597017655702',
@@ -2604,6 +2604,7 @@ export default {
       this.infoBoxVisible=false;
       this.personTrackVisible = true
       // 2. 初始化人员轨迹查询条件：开始时间、结束时间
+      this.personEndTime = new Date()
       const times = this.personEndTime.getTime() - 24 * 60 * 60 * 1000
       this.personStartTime = new Date(times)
     },
@@ -2633,6 +2634,7 @@ export default {
       }
 
       // 2. 根据查询条件，获取人员轨迹数据
+      console.log(this.currentPerson)
       if (!this.getTips(this.personStartTime, this.personEndTime)) return
       let param = { start_time: this.formatTime(this.personStartTime),
                     end_time: this.formatTime(this.personEndTime), 
@@ -2767,14 +2769,14 @@ export default {
      * @return {*}
      */
     requestPersonTrack (param) {
-      param.device_id = this.currentPersonnelData.id
+      // param.device_id = this.currentPersonnelData.id
       let url = "http://192.168.1.180:8021/watch/gps/now"
       return new Promise((resolve, reject) => {
         this.$post(url, param, (res) => {
-          if (res.code === 0 && res.data && res.data.length <= 0) {
-            reject(res.data.message)
-          } else {
+          if (res.code === 0 && res.data && res.data.length > 0) {
             resolve(res.data)
+          } else {
+            reject()
           }
         })
       })
