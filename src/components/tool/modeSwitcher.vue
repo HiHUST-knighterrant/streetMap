@@ -1,35 +1,95 @@
-
+<!--
+ * @Author: xiongqianqian
+ * @Date: 2020-07-09 10:40:18
+ * @LastEditTime: 2020-09-09 09:22:27
+ * @LastEditors: Please set LastEditors
+ * @Description: 基于cesium的二三维转换
+ * @FilePath: \cesium-vue-test\src\components\tool\modeSwitcher2.vue
+-->
 <template>
-  <div class="dSwitch" id="dSwitchContainer" ref="switcher">
-    <el-radio-group v-model="dType" size="mini">
-      <el-radio-button label="3D"></el-radio-button>
-      <el-radio-button label="2D"></el-radio-button>
-    </el-radio-group>
+  <div>
+    <!-- 切换2d3d模式 -->
+    <div class="dSwitch" id="dSwitchContainer" ref="switcher">
+      <el-radio-group v-model="dType" size="mini">
+        <el-radio-button label="3D"></el-radio-button>
+        <el-radio-button label="2D"></el-radio-button>
+      </el-radio-group>
+    </div>
   </div>
 </template>
-
 <script>
-
 import 'cesium/Source/Widgets/widgets.css'
 let Cesium = require('cesium/Source/Cesium')
+
 export default {
   data () {
     return {
       dType: '3D',
-      cesiumExtent: '',
-      tianExtent: ''
+      sceneModePicker: ''
     }
   },
   mounted () {
-    this.listen3DExtent()
-    this.listen2DExtent()
+    const scene = this.$parent.viewer.scene
+    this.sceneModePicker = new Cesium.SceneModePicker('dSwitchContainer', scene, 0)
+    this.$refs.switcher.children[1].style.display = 'none'
+    this.$parent.sceneMode = this.dType;
   },
   methods: {
-    listen3DExtent () {
-      this.get3DExtent()
-      this.$parent.viewer.scene.postRender.addEventListener( e => {
-        this.get3DExtent()
-      })
+    sceneModeControl (action) {
+      let command
+      let primitives = this.$parent.viewer.scene.primitives._primitives
+      const dataSources = this.$parent.viewer.dataSources
+      if (dataSources.length > 0) {
+        for (let i = 0; i < dataSources.length; i++) {
+          var current = dataSources.get(i);
+          dataSources.remove(current)
+        }
+      }
+      if (action === '3D') {
+        // 三维模型隐藏
+        this.$parent.tileset.show = true
+        primitives.forEach(item => {
+          if (item instanceof Cesium.ModelInstanceCollection) {
+            item.show = true
+          }
+        })
+        // 显示影像图
+        this.$parent.sitelliteMap.show = true
+        // this.$parent.customMap.show = true
+        // this.$parent.labelMap.show = false
+        this.$parent.vectorMap.show = false
+        this.$parent.sceneMode = '3D';
+        command = this.sceneModePicker.viewModel.morphTo3D
+        // 显示三维指南针
+        document.getElementById('navigationDiv').style.display = 'block'
+      } else if (action === '2D') {
+        // 三维模型隐藏
+        this.$parent.tileset.show = false
+        primitives.forEach(item => {
+          if (item instanceof Cesium.ModelInstanceCollection) {
+            item.show = false
+          }
+        })
+        // 切换二维时保证视图范围大致一致
+        let extent = this.get3DExtent()
+        this.$parent.viewer.camera.setView({
+          destination: Cesium.Rectangle.fromDegrees(extent.west, extent.south, extent.east, extent.north)
+        })
+        // 显示矢量地图
+        this.$parent.vectorMap.show = true
+        if (this.$parent.labelMap) {
+          this.$parent.labelMap.show = true
+        }
+        this.$parent.sitelliteMap.show = false
+        // this.$parent.customMap.show = false
+        this.$parent.sceneMode = '2D';
+        // 隐藏三维指南针
+        document.getElementById('navigationDiv').style.display = 'none'
+        command = this.sceneModePicker.viewModel.morphTo2D
+      }
+      if (command.canExecute) {
+        command()
+      }
     },
     get3DExtent() {
       var rectangle = this.$parent.viewer.camera.computeViewRectangle();
@@ -37,85 +97,33 @@ export default {
       var north = rectangle.north / Math.PI * 180
       var east = rectangle.east / Math.PI * 180
       var south = rectangle.south / Math.PI * 180
-      this.cesiumExtent = {
+      return {
         west: west,
         east: east,
         north: north,
         south: south
       }
     },
-    listen2DExtent () {
-      const tMap = this.$parent.tMap
-      tMap.addEventListener('move', () => {
-        let extent = this.$parent.tMap.getBounds()
-        this.tianExtent = {
-          west: extent.kq.lng < -180 ? 180 : extent.kq.lng,
-          east: extent.Lq.lng > 180 ? 180: extent.Lq.lng,
-          south: extent.Lq.lat,
-          north: extent.kq.lat
-        }
-      })
-      tMap.addEventListener('zoomend', () => {
-        let extent = this.$parent.tMap.getBounds()
-        this.tianExtent = {
-          west: extent.kq.lng < -180 ? 180 : extent.kq.lng,
-          east: extent.Lq.lng > 180 ? 180: extent.Lq.lng,
-          south: extent.Lq.lat,
-          north: extent.kq.lat
-        }
-      })
-      tMap.addEventListener('resize', () => {
-        let extent = this.$parent.tMap.getBounds()
-        this.tianExtent = {
-          west: extent.kq.lng < -180 ? -180 : extent.kq.lng,
-          east: extent.Lq.lng > 180 ? 180: extent.Lq.lng,
-          south: extent.Lq.lat,
-          north: extent.kq.lat
-        }
-      })
-    }
   },
   watch: {
-    dType (val) {
-      if (val === '3D') {
-        this.$parent.$refs.cesiumMap.style.display = 'block'
-        this.$parent.$refs.tianMap.style.display = 'none'
+    dType () {
+      if (this.dType === '3D') {
+        // this.$parent.viewer.scene.morphTo3D(1)
+        this.sceneModeControl('3D')
       } else {
-        this.$parent.$refs.tianMap.style.display = 'block'
-        this.$parent.$refs.cesiumMap.style.display = 'none'
+        // this.$parent.viewer.scene.morphTo2D(1)
+        this.sceneModeControl('2D')
       }
-    },
-    cesiumExtent: { // 三维联动二维
-      handler(val, oldVal) {
-        if (this.dType === '2D') return
-        let points = [
-          new T.LngLat(val.west, val.north),
-          new T.LngLat(val.west, val.south),
-          new T.LngLat(val.east, val.south),
-          new T.LngLat(val.east, val.north),
-        ]
-        this.$parent.tMap.setViewport(points)
-      },
-      deep: true
-    },
-    tianExtent: { // 二维联动三维
-      handler(val, oldVal) {
-        if (this.dType === '3D') return
-        var rectangle = Cesium.Rectangle.fromDegrees(val.west, val.south, val.east, val.north)
-        this.$parent.viewer.camera.setView({
-          destination: rectangle
-        })
-      },
-      deep: true
     }
   }
 }
 </script>
 
-<style scoped>
-.dSwitch {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-}
-</style>  
+<style >
+  .dSwitch {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: none;
+  }
+</style>

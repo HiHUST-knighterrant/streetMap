@@ -125,7 +125,8 @@ function initRequest(_config) {
       if (response.data.result) {
         if (response.data.result == "login") {
           common.setStorage("user", null);
-          top.location.href = Global.basePath + "pr-map/#/login"; //newAdmin跳转路径//newAdmin修改
+          // top.location.href = Global.basePath + "pr-map/#/login"; //newAdmin跳转路径//newAdmin修改
+          top.location.href = Global.basePath + "#/login"; //newAdmin跳转路径//newAdmin修改
           // top.location.href = Global.oldBasePath + "/index.html"; //admin跳转路径
           return response;
         } else if (

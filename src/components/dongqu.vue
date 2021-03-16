@@ -7,11 +7,10 @@
       </div>
       <div id="tContainer" ref="tianMap"></div>
       <div v-if="mapInited">
-        <ModeSwitcher2 ref="modeSwitch"></ModeSwitcher2>
-        <!-- <Meature></Meature> -->
-        <!-- <BasemapSwitcher></BasemapSwitcher> -->
+        <ModeSwitcher ref="modeSwitch"></ModeSwitcher>
       </div>
       
+      <!-- 控制按钮 -->
       <div class="control-button">
         <el-radio-group v-model="layer" @change="getCompLayer">
           <el-radio-button label="门店" size="mini"></el-radio-button>
@@ -36,7 +35,7 @@
             <div class="close" @click="closeInfoBox">×</div>
           </div>
           <div class="content">
-            <table v-if="select.feature && select.feature.detail">
+            <table v-if="select.feature && select.feature.detail && select.type === 'shop'">
               <tr>
                 <td class="key">名称</td>
                 <td>{{ select.feature.detail.orgName || '-'}}</td>
@@ -72,6 +71,74 @@
               <tr>
                 <td class="key">经营范围</td>
                 <td>{{ select.feature.detail.businessScope || '-'}}</td>
+              </tr>
+            </table>
+            <table v-else-if="select.feature && select.feature.detail && select.type === 'building'">
+              <tr>
+                <td class="key">建筑类别：</td>
+                <td>{{ select.feature.detail.typeOfBudingName || '-'}}</td>
+                <td class="key">单元数：</td>
+                <td>{{ select.feature.detail.unit || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">层数：</td>
+                <td>{{ select.feature.detail.layers || '-'}}</td>
+                <td class="key">总户数：</td>
+                <td>{{ select.feature.detail.buildingTenement || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">居民数：</td>
+                <td>{{ select.feature.detail.personNum || '-'}}</td>
+                <td class="key">楼栋状况</td>
+                <td>{{ select.feature.detail.budingConditionName || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">使用状况：</td>
+                <td>{{ select.feature.detail.budingServiceConditionName || '-'}}</td>
+                <td class="key">楼长：</td>
+                <td>{{ select.feature.detail.contactMan || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">楼长联系方式：</td>
+                <td>{{ select.feature.detail.contactTel || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">数据来源：</td>
+                <td>{{ select.feature.detail.dataSourcesName || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">初始日期：</td>
+                <td>{{ select.feature.detail.initialTime || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">变更日期：</td>
+                <td>{{ select.feature.detail.changeTime || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">标识码：</td>
+                <td>{{ select.feature.detail.identificationCode || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">门(楼)牌号：</td>
+                <td>{{ select.feature.detail.buildingNumber || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">所属机构：</td>
+                <td>{{ (select.feature.detail.deptCode && select.feature.detail.deptCode.officeName) || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">所在路段：</td>
+                <td>{{ select.feature.detail.roadName || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">地址描述：</td>
+                <td>{{ select.feature.detail.address || '-'}}</td>
+              </tr>
+              <tr>
+                <td class="key">重点服务人员：</td>
+                <td>{{ select.feature.detail.communityService || '-'}}</td>
+                <td class="key">重点关注人员：</td>
+                <td>{{ select.feature.detail.importantType || '-'}}</td>
               </tr>
             </table>
             <div  v-else-if="selectModel && selectModel.detail">
@@ -411,10 +478,9 @@
 </template>
 <script>
 import 'cesium/Source/Widgets/widgets.css';
-let Cesium = require('cesium/Source/Cesium')
-import CesiumNavigation from 'cesium-navigation-es6'
-require('../../static/libs/cesium/cesiumGeometry')
-const qs = require('qs')
+let Cesium = require('cesium/Source/Cesium');
+import CesiumNavigation from 'cesium-navigation-es6'; // 添加指南针插件
+require('../../static/libs/cesium/cesiumGeometry');
 import common from '../uitl/common'
 // 三维模型
 import shu from '../../static/3dModel/shu.gltf'
@@ -438,13 +504,8 @@ import huajiaTree from '../../static/3dModel/comp/huajia_tree.gltf'
 import yushuibizi from '../../static/3dModel/comp/yushuibizi.gltf'
 // 组件
 import ModeSwitcher from './tool/modeSwitcher'
-import ModeSwitcher2 from './tool/modeSwitcher2'
 import BasemapSwitcher from './tool/basemapSwitcher'
-// import Meature from './tool/meature'
-// 建筑模型--部件数据
-// import compData from '../../static/SampleData/comp.json' 
-// 三维单体化数据
-// import compData from '../../static/SampleData/point.json'
+// 部件数据
 import compData from '../../static/SampleData/3dComp.json'
 import BuildingData from '../../static/SampleData/3dBuilding.json'
 import orgData from '../../static/SampleData/3dOrg.json'
@@ -452,7 +513,6 @@ import orgData from '../../static/SampleData/3dOrg.json'
 export default {
   components: {
     ModeSwitcher,
-    ModeSwitcher2,
     BasemapSwitcher
   },
   data () {
@@ -470,8 +530,9 @@ export default {
       infoBoxVisible: false,
       windowPosition: '',
       select: {
-        primitive: undefined,
-        attributes: new Cesium.Color()
+        feature: undefined,
+        attributes: new Cesium.Color(),
+        type: ''
       },
       selectModel: null,
       selectModelBox: null,
@@ -531,7 +592,6 @@ export default {
   mounted () {
     this.initUserInfo()
     this.initViewer()
-    // this.initTMap()
     this.mapInited = true
     let self = this;
     window.mapVue = self;
@@ -580,30 +640,32 @@ export default {
         baseLayerPicker: false, //是否显示图层选择控件
         sceneModePicker: false, //是否显示投影方式控件
         homeButton: false,  //是否显示默认定位点的控件
-        shouldAnimate : true,
+        shouldAnimate : true, 
         showRenderLoopErrors: false
       });
 
 
       this.viewer._cesiumWidget._creditContainer.style.display = 'none';  // 默认去除版权信息
-      this.viewer.imageryLayers.get(0).show = false;  // 默认不加载影像
+      this.viewer.imageryLayers.get(0).show = true;  
+      this.viewer.imageryLayers.remove(this.viewer.imageryLayers.get(0)) // 默认不加载影像
       this.viewer.scene.skyBox.show = false  // 默认不显示背景图片
-      this.viewer.scene.backgroundColor = new Cesium.Color(0.0, 0.0, 0.0, 0.0) //默认将背景颜色设置为黑色
+      this.viewer.scene.backgroundColor = new Cesium.Color(0.0, 0.0, 0.0, 0.0) // 默认将背景颜色设置为黑色
       this.viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK) // 屏蔽默认双击事件
       
-      // 动画和时间线控件的隐藏
+      // 隐藏动画和时间线控件
       this.viewer.animation.container.style.visibility = "hidden"
       this.viewer.timeline.container.style.visibility = "hidden"
 
+      // 打开地形监测
       this.ellipsoid = this.viewer.scene.globe.ellipsoid
       this.viewer.scene.globe.depthTestAgainstTerrain = true
 
       // 禁止相机进入地面以下
       this.viewer.scene.preRender.addEventListener(this.undergroundMode)
 
+      // 设置大气环境变量
       this.viewer.scene.shadowMap.darkness = 1.275
       this.viewer.scene.skyAtmosphere.brightShift = 0.4 // 大气的亮度
-      // this.viewer.scene.debugShowFramesPerSecond = true
       this.viewer.scene.highDynamicRange = false
       this.viewer.scene.sun.show = false
 
@@ -618,29 +680,17 @@ export default {
         enableCompassOuterRing: true // 用于启用或禁用指南针外环。true是启用，false是禁用。默认值为true。如果将选项设置为false，则该环将可见但无效。
       }
       CesiumNavigation(this.viewer, options)
-      // 修改指南针的样式
-      document.getElementsByClassName('navigation-controls')[0].style.backgroundColor = 'rgba(47, 53, 60, 0.5)'
+      document.getElementsByClassName('navigation-controls')[0].style.backgroundColor = 'rgba(47, 53, 60, 0.5)' // 修改指南针的样式
 
       this.getCurrentCamera()
 
       // this.addCBasicMap()
-      this.addCSitelliteMap()
+      this.addSitelliteMap()
       this.addMapboxVectorMap()
       // this.addCVectorMap()
       this.directLocation()
-      // this.addCustomMap()
+      // this.addCustomSatellite()
       this.load3DTile()
-    },
-    /**
-     * @description: 初始化天地图矢量地图
-     * @param {type} 
-     * @return: 
-     */
-    initTMap () {
-      this.tMap = new T.Map('tContainer', {
-        center: new T.LngLat(116.40769, 39.89945),
-        zoom: 12
-      })
     },
     /**
      * @description: 直接定位至目标区域
@@ -662,33 +712,37 @@ export default {
       this.viewer.scene.camera.setView(homeCameraView)
     },
     /**
-     * @description: 默认添加谷歌卫星影像（未偏移）
+     * @description: 默认添加天地图卫星影像（未偏移）
      * @param {type} 
      * @return: 
      */
-    addCSitelliteMap () {
-      this.sitelliteMap = new Cesium.ImageryLayer(new Cesium.WebMapTileServiceImageryProvider({
-          url: 'http://{s}.google.cn/vt?lyrs=s&x={TileCol}&y={TileRow}&z={TileMatrix}&s=Gali',
-          layer: 'googleSitelliteMap',
+    addSitelliteMap () {
+      this.sitelliteMap = new Cesium.ImageryLayer(
+        new Cesium.WebMapTileServiceImageryProvider({
+          url: "http://t{s}.tianditu.gov.cn/img_c/wmts?service=wmts&request=GetTile&version=1.0.0&LAYER=img&tileMatrixSet=c&TileMatrix={TileMatrix}&TileRow={TileRow}&TileCol={TileCol}&style=default&format=tiles&tk=76892c38deab957e65556e5824ca53e9",
+          layer: 'tianSatelliteMap',
           style: 'default',
           format: 'tiles',
-          tileMatrixSetID: "c",
-          subdomains: ["mt0", "mt1", "mt2", "mt3"],
-          tilingScheme: new Cesium.WebMercatorTilingScheme(),
-          maximumLevel: 22
+          tileMatrixSetID: 'c',
+          subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+          tilingScheme: new Cesium.GeographicTilingScheme(),
+          tileMatrixLabels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19'],
+          maximumLevel: 18
         }), {
         show: true,
         brightness: 1.76,
         contrast: 1.48,
         hue: 0,
         saturation: 1.44,
-        gamma: 0.68
+        gamma: 0.68,
+        colorToAlpha: "#2B53F9", // 添加颜色
+        alpha: 0.5
       })
       this.sitelliteMap.title = 'sitelliteMap'
       this.viewer.imageryLayers.add(this.sitelliteMap)
     },
     /**
-     * @description: 默认添加天地图矢量地图
+     * @description: 默认添加天地图矢量+标注地图
      * @param {type} 
      * @return: 
      */
@@ -704,7 +758,9 @@ export default {
         tileMatrixLabels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19'],
         maximumLevel: 18
       }), {
-        show: false
+        show: false,
+        colorToAlpha: "#2B53F9",
+        alpha: 0.3
       })
       this.vectorMap.title = 'vectorMap'
       this.viewer.imageryLayers.add(this.vectorMap)
@@ -724,13 +780,16 @@ export default {
       this.labelMap.title = 'labelMap'
       this.viewer.imageryLayers.add(this.labelMap)
     },
+    /**
+     * 添加mapbox矢量地图
+     */
     addMapboxVectorMap () {
       this.vectorMap = this.viewer.imageryLayers.addImageryProvider(
         new Cesium.MapboxStyleImageryProvider({
           url: 'https://api.mapbox.com/styles/v1/',
           username: 'xiongqianqian',
-          styleId: 'ckesaim5u1txc19uip9r5l9f1',
-          accessToken: 'pk.eyJ1IjoieGlvbmdxaWFucWlhbiIsImEiOiJjazVrYzNidzQwY2xsM2xqb2pqNTR6c2huIn0.NbOIQI9qF4winz6jY3FZOw'
+          styleId: 'ckm9xga5e1g1m17p35koqm2pp',
+          accessToken: 'pk.eyJ1IjoieGlvbmdxaWFucWlhbiIsImEiOiJja202MjNlM3UwancxMnluNnN3YTJ5ZzZrIn0.H2aNQ0oHOUa3HhhvoPyxHQ'
         })
       )
       this.vectorMap.title = 'mapboxVectorMap'
@@ -741,7 +800,7 @@ export default {
      * @param {type} 
      * @return: 
      */
-    addCustomMap () {
+    addCustomSatellite () {
       this.customMap = new Cesium.ImageryLayer(new Cesium.WebMapServiceImageryProvider({
         url: 'http://117.159.25.220:8081/geoserver/districts/wms',
         layers: 'districts:basemap',
@@ -802,7 +861,7 @@ export default {
       this.currentCamera = `经度: ${cameraInfo.longitude}° 纬度: ${cameraInfo.latitude}° 高度: ${cameraInfo.height} 航偏角: ${cameraInfo.heading}° 俯仰角: ${cameraInfo.pitch}° 翻滚角: ${cameraInfo.roll}°`
     },
     /**
-     * @description: 添加3dtile数据--建筑模型
+     * @description: 添加3dtile数据--只有建筑模型Version1
      * @param {type} 
      * @return: 
      */
@@ -854,7 +913,7 @@ export default {
         this.scenePickVersion1()
     },
     /**
-     * @description: 添加部件数据--建筑模型
+     * @description: 添加部件数据--Version1
      * @param {type} 
      * @return: 
      */
@@ -1057,6 +1116,11 @@ export default {
       // let barBdzCollection = this.createInstanceCollection(barBdz, barBdzInstances) // 柱形便道桩
       // let sphereCollection = this.createInstanceCollection(sphereBdz, sphereBdzInstances) // 球形便道桩
     },
+    /**
+     * @description: 创建ModelInstanceCollection来批量加载gltf或者glb格式的三维模型
+     * @param {type} 
+     * @return: 
+     */
     createInstanceCollection (model, instances, lightFlag) {
       if (lightFlag === undefined) lightFlag = true
       let lightColor = lightFlag ? new Cesium.Cartesian3(20, 20, 20) : new Cesium.Cartesian3(1, 1, 1)  
@@ -1068,21 +1132,23 @@ export default {
       }))
     },
     /**
-     * @description: 加载清除道路上树和垃圾桶的倾斜摄影--version2
+     * @description: 加载倾斜摄影数据--Version2（清除道路上树和垃圾桶）
      * @param {type} 
      * @return: 
      */
     load3DTile () {
       const viewer = this.viewer
-      // 添加3dTile数据
+      // 1. 添加3dTile数据
       this.tileset = new Cesium.Cesium3DTileset({
-        url: this.GLOBAL.baseOrigin+"/3dTiles/tileset.json",
-        // url: 'http://dev.hnzwdz.com/3dTiles/tileset.json'
+        // url: this.GLOBAL.baseOrigin+"/3dTiles/tileset.json",
+        url: 'http://dev.hnzwdz.com/3dTiles/tileset.json'
         // maximumScreenSpaceError: 2,
         // skipScreenSpaceErrorFactor: 16
       })
       
       viewer.scene.primitives.add(this.tileset)
+
+      // 2. 相机视角
       viewer.camera.flyTo({
         destination: Cesium.Cartesian3.fromDegrees(113.74159603307372, 34.77766781955999, 2308.593862489063),
         orientation: {
@@ -1092,28 +1158,30 @@ export default {
         },
         duration: 2
       })
+
+      // 3. 设置瓦片的model的Matrix，将倾斜摄影数据移动到与地图匹配的位置
       let tilesetArr = Cesium.Cartesian3.fromArray([
         this.tileset.modelMatrix[12],
         this.tileset.modelMatrix[13],
         this.tileset.modelMatrix[14]
       ])
-      // let center = Cesium.Cartesian3.add(tilesetArr, Cesium.Cartesian3.fromArray([22.1, -48.7, -36.0]), new Cesium.Cartesian3())
       let center = Cesium.Cartesian3.add(tilesetArr, Cesium.Cartesian3.fromArray([21.6, -48.3, -36.9]), new Cesium.Cartesian3())
       let m = Cesium.Matrix4.fromTranslation(center)
       this.tileset.modelMatrix = m
-  
+
+      // 4. 添加倾斜摄影的单体化数据，主要包括：建筑物、门店、部件
       this.addMonomerData()
       this.scenePick()
     },
     /**
-     * @description: 添加倾斜摄影的单体化数据
+     * @description: 添加倾斜摄影的单体化数据--建筑物、门店、部件
      * @param {type} 
      * @return: 
      */
     addMonomerData () {
       const viewer = this.viewer
       
-      // 添加倾斜摄影的单体数据——建筑物
+      // 1. 添加单体化数据——建筑物（由polygon--》polygon类型，给高度）
       BuildingData.features.forEach(feature => {
         const instance = new Cesium.GeometryInstance({
           id: feature.properties.id,
@@ -1133,7 +1201,7 @@ export default {
           releaseGeometryInstances: false
         }))
       })
-      // 添加倾斜摄影的单体数据——门店
+      // 2. 添加单体化数据——门店（由line--》wall类型）
       orgData.features.forEach(feature => {
         let minHeight = feature.properties.minHeight
         let maxHeight = feature.properties.maxHeight
@@ -1143,8 +1211,8 @@ export default {
           geometry: new Cesium.WallGeometry({
             positions: Cesium.Cartesian3.fromDegreesArray([].concat.apply([], feature.geometry.coordinates[0])),
             granularity: 5,
-            maximumHeights: Array(feature.geometry.coordinates[0].length).fill(maxHeight),
-            minimumHeights: Array(feature.geometry.coordinates[0].length).fill(minHeight),
+            maximumHeights: Array(feature.geometry.coordinates[0].length).fill(maxHeight), // 最高高度
+            minimumHeights: Array(feature.geometry.coordinates[0].length).fill(minHeight), // 最低高度
             vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL
           }),
           attributes : {
@@ -1157,40 +1225,24 @@ export default {
           releaseGeometryInstances: false
         }))
       })
-      // // 获取点在倾斜摄影的顶部坐标
-      // let cartesians = []
-      // componentDataVersion2.features.forEach(feature => {
-      //   const coordinates = feature.geometry.coordinates
-      //   const cartesian = Cesium.Cartesian3.fromDegrees(coordinates[0], coordinates[1])
-      //   cartesians.push(cartesian)
-      // })
-      // console.log(cartesians)
-      // viewer.scene.clampToHeightMostDetailed(cartesians)
-      // .then(clampedCartesians => {
-      //   console.log(clampedCartesians)
-      //   clampedCartesians.forEach((item, index) => {
-      //     componentDataVersion2.features[index].properties.clampedCartesian = item
-      //   })
-      //   console.log(JSON.stringify(componentDataVersion2))
-      // })
 
-      // 添加倾斜摄影的单体数据——部件
+      // 3. 添加单体模型——部件
       let instances = []
       let ludengjgInstances = [], ranqijgInstances = [], relijgInstances = [], xiaofangjgInstances = [], shangshuijgInstances = [], shangshuijgInstancesO = [], 
           tongxinjgInstances = [], yushuijgInstances = [], wushuijgInstances = [], dianlijgInstances = [], gonganjgInstances = [], qitajgInstances = []
       let lajitongInstances = []
       let shumuInstances = []
-      let jinggaiInstances = []
       let ludengInstances = []
       compData.features.forEach(feature => {
         const id = feature.properties.id
         const compName = feature.properties.名称
-        let clampedCartesian = feature.properties.clampedCartesian
+        // 3.1. 获取点在倾斜摄影数据表面/地表的坐标
+        let clampedCartesian = feature.properties.clampedCartesian 
         let cartesian = clampedCartesian ? 
             new Cesium.Cartesian3(clampedCartesian.x, clampedCartesian.y, clampedCartesian.z) :
-            Cesium.Cartesian3.fromDegrees(feature.geometry.coordinates[0],feature.geometry.coordinates[1])
-        // let cartesian =  Cesium.Cartesian3.fromDegrees(feature.geometry.coordinates[0],feature.geometry.coordinates[1])
+            Cesium.Cartesian3.fromDegrees(feature.geometry.coordinates[0],feature.geometry.coordinates[1]) 
 
+        // 3.2. 创建不同部件的instance实例（偏移、旋转、放大），并push入对应的部件实例集合中
         let modelMatrix, rotateDegree, scale, offset
         if (compName.indexOf('井盖') != -1) {
           offset = Cesium.Cartesian3.fromArray([0, 0, -0.07])
@@ -1200,7 +1252,7 @@ export default {
           modelMatrix = this.cartesianToMatrix4(cartesian, scale, rotateDegree)
           const instance = {
             batchId: `${id}_jinggai`,
-            modelMatrix: modelMatrix
+            modelMatrix: modelMatrix 
           }
           switch (compName) {
             case '路灯井盖': 
@@ -1235,6 +1287,7 @@ export default {
               break;
             default:
               qitajgInstances.push(instance)
+              break;
           }
         } else if (compName === '垃圾箱') {
           scale = 1
@@ -1264,6 +1317,7 @@ export default {
           ludengInstances.push(instance)
         }
       })
+      // 3.3. 创建ModelInstanceCollection来批量加载gltf或者glb格式的三维模型
       this.createInstanceCollection(jgQita, ludengjgInstances, false) // 路灯井盖
       this.createInstanceCollection(jgQita, ranqijgInstances, false) // 天然气井盖
       this.createInstanceCollection(jgQita, relijgInstances, false) // 热力井盖
@@ -1281,6 +1335,13 @@ export default {
       this.createInstanceCollection(lajitongStreet, lajitongInstances) // 路两侧的垃圾桶
       this.createInstanceCollection(ludeng, ludengInstances) // 路灯
     },
+    /**
+     * @description: 将世界坐标、尺度因子、旋转角度整合为四维的变换矩阵
+     * @param {*} cartesian Object 世界坐标
+     * @param {*} scale Number 尺度因子
+     * @param {*} rotateDegree Number 旋转角度
+     * @return {*}
+     */
     cartesianToMatrix4 (cartesian, scale, rotateDegree) {
       let modelMatrix = Cesium.Transforms.headingPitchRollToFixedFrame(cartesian, new Cesium.HeadingPitchRoll(0, 0, 0))
       Cesium.Matrix4.multiplyByUniformScale(modelMatrix, scale, modelMatrix)
@@ -1296,7 +1357,6 @@ export default {
      * @return: 
      */
     getCompLayer (type) {
-      console.log(this.sceneMode)
       this.infoBoxVisible = false
       this.carInfoVisible = false
       this.carTrackVisible = false
@@ -1330,6 +1390,7 @@ export default {
       const dataSources = viewer.dataSources
       let ds
 
+      // 1. 地图中有该类型的数据层：获取并显示该数据层，其他数据层隐藏
       if (dataSources.getByName(type+this.sceneMode).length > 0) {
         for (let i = 0; i < viewer.dataSources.length; i++) {
           let _ds = dataSources.get(i)
@@ -1341,25 +1402,30 @@ export default {
             _ds.show = false
           }
         }
-      } else {
+      } else { 
+        // 2. 地图中无该类型的数据层
+        // 2.1. 隐藏其他数据层
         if (dataSources.length > 0) {
           for (let i = 0; i < viewer.dataSources.length; i++) {
             dataSources.get(i).show = false
           }
         }
+        // 2.2. 创建类型对应的数据层
         ds = new Cesium.CustomDataSource(type+this.sceneMode)
         dataSources.add(ds)
+        // 2.3. 根据类型请求数据并打点（到对应图层），缩放到图层点的范围
         this.addPointInLayer(type, ds)
       }
     },
     /**
-     * @description: 根据类型请求数据并打点（到对应图层），缩放到图层点的范围
+     * @description: 根据类型及当前维度获取图标，请求数据并打点（到对应图层），缩放到图层点的范围
      * @param {String} type
      * @param {Cesium.CustomDataSource} ds
      * @return: 
      */
     addPointInLayer (type, ds) {
       const viewer = this.viewer
+      // 1. 根据类型及当前维度获取需显示的图标
       if(this.sceneMode == '3D'){
         var img = {
           person: {
@@ -1369,11 +1435,11 @@ export default {
           video: {
             online: require('../../static/images/icon/摄像头_在线.svg'),
             offline: require('../../static/images/icon/摄像头_不在线.svg')
-            },
+          },
           car: {
             online: require('../../static/images/icon/车辆_在线.svg'),
             offline: require('../../static/images/icon/车辆_不在线.svg')
-            },
+          },
           case: require('../../static/images/icon/案件.svg'),
         }
       }else{
@@ -1385,11 +1451,11 @@ export default {
           video: {
             online: require('../../static/images/icon/video_2.svg'),
             offline: require('../../static/images/icon/video_1.svg')
-            },
+          },
           car: {
             online: require('../../static/images/icon/car_2.svg'),
             offline: require('../../static/images/icon/car_1.svg')
-            },
+          },
           case:{
             onGoing: require('../../static/images/icon/case_1.svg'),
             closed: require('../../static/images/icon/case_3.svg'),
@@ -1399,6 +1465,7 @@ export default {
         }
       }
       
+      // 2. 请求数据并打点（到对应图层）
       if (type === 'person') {
         const param = {isShowOnline: '0', isAllOnline: '0'};
         const url = '/command/aSignIn/getUserPoint';
@@ -1560,7 +1627,7 @@ export default {
       })
     },
     /**
-     * @description: 建筑物模型的点击事件
+     * @description: 建筑物模型的点击事件--version1
      * @param {type} 
      * @return: 
      */
@@ -1572,9 +1639,6 @@ export default {
         this.infoBoxVisible = false
         let picked = viewer.scene.pick(e.position)
         if (Cesium.defined(this.select.feature)) {
-          console.log(this.select.feature)
-          // if (picked._batchId === this.select.feature._batchId) return
-          console.log(this.select.feature.content.batchTable)
           if (!Cesium.defined(this.select.feature.color)) return
           this.select.feature.color = this.select.attributes
           this.select.feature = undefined
@@ -1693,6 +1757,7 @@ export default {
       const viewer = this.viewer
       let attributes, currentColor, currentShow
 
+      // 1. 创建可以匹配树木、垃圾桶、井盖、路灯等部件的盒子，使点击单体部件时可以高亮
       const shumuBox = Cesium.BoxGeometry.fromDimensions({
         vertexFormat: Cesium.VertexFormat.POSITION_AND_NORMAL,
         dimensions: new Cesium.Cartesian3(5, 5, 16)
@@ -1711,9 +1776,13 @@ export default {
       })
       const boxRotate = Cesium.Matrix3.fromRotationZ(Cesium.Math.toRadians(45))
 
+      // 2. 定义全局的单击事件
       viewer.screenSpaceEventHandler.setInputAction(e =>{
         const picked = viewer.scene.pick(e.position)
+        // 2.1. 拾取的是空或3dTile：不作处理
         if (!Cesium.defined(picked) || picked.primitive instanceof Cesium.Cesium3DTileset) return
+        // 2.2. 清除置空已有的高亮的建筑（primitive）、部件盒子（box）
+        // 2.2.1. 若已有高亮的建筑，清除其高亮
         if (Cesium.defined(this.select.feature) && Cesium.defined(this.select.feature.primitive)) {
           if (picked.id === this.select.feature.id) return
           attributes = this.select.feature.primitive.getGeometryInstanceAttributes(this.select.feature.id)
@@ -1721,23 +1790,29 @@ export default {
           attributes.color = [0, 0, 255, 1]
           attributes = {}
           this.select.feature = undefined
+          this.select.type = undefined
         }
+        // 2.2.2. 若已有高亮的部件，清除其高亮
         if (Cesium.defined(this.selectModel) && this.selectModel.instanceId) {
           if (picked.instanceId === this.selectModel.instanceId) return
           this.selectModel = undefined
           viewer.scene.primitives.remove(this.selectModelBox)
         }
+        // 2.2.3. 若已有选中的billboard的实体，清空
         if (Cesium.defined(this.selectEntity)) {
           if (picked.id.id === this.selectEntity.id) return
           this.selectEntity = undefined
         }
         
+        // 2.3. 当前拾取的是部件（modelInstance）
         if (picked instanceof Cesium.ModelInstance) {
+          // 2.3.1. 获取拾取的modelInstance的世界坐标，并转化为转移矩阵
           this.selectModel = picked
           let matrix = this.selectModel.modelMatrix
           let centerCartesian =  new Cesium.Cartesian3(matrix[12], matrix[13], matrix[14])
-
           Cesium.Matrix4.multiplyByMatrix3(matrix, boxRotate, matrix)
+
+          // 2.3.2. 获取拾取的modelInstance的类型，添加对应的高亮盒子
           const type = this.selectModel.instanceId.split('_')[1]
           let box
           switch (type) {
@@ -1766,47 +1841,62 @@ export default {
             appearance : new Cesium.PerInstanceColorAppearance(),
             releaseGeometryInstances: false
           }))
+
+          // 2.3.4. 初始化info弹出框的位置
           this.initInfobox(centerCartesian)
+          // 2.3.5. 获取部件的详情，并展示在info弹出框中
           const id = this.selectModel.instanceId.split('_')[0]
           const param = {modelId: id}
           this.getSingleDetail(param, 'model_part')
           return
         }
 
+        // 2.4. 当前拾取的是门店（2d）、部件（2d）、人员（2d/3d）、摄像头(2d/3d)、车辆(2d/3d)、案件(2d/3d)等实体
         if (picked.id instanceof Cesium.Entity) {
+
+          // 2.4.1. 隐藏车辆轨迹，初始化info弹出框的位置
           this.carTrackVisible = false
           this.selectEntity = picked.id
           let centerCartesian = this.selectEntity.position.getValue()
           this.initInfobox(centerCartesian)
           this.infoBoxVisible = true
+          // 2.4.2. 拾取的是门店
           if (this.selectEntity.name === 'shop') {
             this.select.feature = {};
             this.select.feature.detail = this.selectEntity.property
           }
+
+          // 2.4.3. 拾取的是部件
           if (this.selectEntity.name === 'part') {
             this.selectModel = {};
             this.selectModel.detail = this.selectEntity.property
           }
         } else {
+
+          // 2.5. 当前拾取的是门店（3d）、建筑（3d）
           const pickedGeom = picked.primitive.geometryInstances.geometry
+          // 2.5.1. 拾取的是建筑（3d）
           if (pickedGeom instanceof Cesium.PolygonGeometry) { 
+            // 高亮
             this.select.feature = picked
+            this.select.type = 'building'
             var attributes = picked.primitive.getGeometryInstanceAttributes(picked.id)
             attributes.color = [255, 255, 0, 128]
             attributes.show = [1]
-            // 获取其详情信息
+            // 获取中心点坐标
             const buildingId =  picked.id
             let feature = BuildingData.features.find(feature => feature.properties.id === buildingId)
-            
             let centerCartesian = Cesium.Cartesian3.fromDegrees(feature.properties.center_lon, feature.properties.center_lat)
             // 显示信息框
             this.initInfobox(centerCartesian)
-            // const param =  {modelId: 'dqjz72'} 
             const param =  {modelId: buildingId} 
-            this.getSingleDetail(param, 'model_shop')
+            this.getSingleDetail(param, 'model_building')
             
           } else if (pickedGeom instanceof Cesium.WallGeometry) {
+            // 2.5.1. 拾取的是门店（3d）
+            // 高亮
             this.select.feature = picked
+            this.select.type = 'shop'
             let attributes = picked.primitive.getGeometryInstanceAttributes(picked.id)
             attributes.color = [255, 255, 0, 128]
             attributes.show = [1]
@@ -1817,16 +1907,14 @@ export default {
             let centerCartesian = Cesium.Cartesian3.fromDegrees(feature.properties.center_lon, feature.properties.center_lat, height)
             // 显示信息框
             this.initInfobox(centerCartesian)
-            // const param =  {modelId: 'dqjz72'}
             const param =  {modelId: orgId}
             this.getSingleDetail(param,'model_shop')
           }
         }
-        
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
     },
     /**
-     * @description: 获取线的中心点
+     * @description: 获取一条线上的中心点
      * @param {Cesium.Cartesian3} cartesian3
      * @return: 
      */
@@ -1843,7 +1931,7 @@ export default {
       return new Cesium.Cartesian3(center.x, center.y, center.z)
     },
     /**
-     * @description: 世界坐标转换为wgs1984地理坐标
+     * @description: 世界坐标--》wgs1984地理坐标
      * @param {Cesium.Cartesian3} cartesian3
      * @return: 
      */
@@ -1856,7 +1944,7 @@ export default {
       }
     },
     /**
-     * @description: 初始化info弹出框
+     * @description: 初始化info弹出框，并实时监听其世界坐标，保证对地图进行移动、旋转等操作时info框能随之移动
      * @param {type} 
      * @return: 
      */
@@ -1875,9 +1963,9 @@ export default {
      */
     closeInfoBox () {
       this.infoBoxVisible = false
-      // 移除高亮的部件点的盒子
+      // 1. 移除高亮的部件点的盒子
       this.viewer.scene.primitives.remove(this.selectModelBox)
-      // 移除高亮的org、building的颜色
+      // 2. 移清除高亮的门店、建筑
       if (Cesium.defined(this.select.feature)) {
         let attributes = this.select.feature.primitive.getGeometryInstanceAttributes(this.select.feature.id)
         attributes.show = [0]
@@ -1894,16 +1982,21 @@ export default {
      */
     register () {
       const viewer = this.viewer
+      // 1. 移除全局的单击事件
       viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
       
+      // 2. 若已存在登记点，移除打点的单击操作，不可再进行打点的操作
       if (Cesium.defined(this.drawEntity)) {
         viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
         return
       }
+
+      // 3. 隐藏info框，移除地图上的所有图层
       this.infoBoxVisible = false
       viewer.dataSources.removeAll()
       viewer.entities.removeAll()
       
+      // 4. 添加全局的单击事件----案件登记事件
       this.$el.style.cursor = 'crosshair'
       viewer.screenSpaceEventHandler.setInputAction(this.addPointAndConfirm, Cesium.ScreenSpaceEventType.LEFT_CLICK)
     },
@@ -1915,29 +2008,32 @@ export default {
     addPointAndConfirm (e) {
       const viewer = this.viewer  
       
-      // 只可点击一次打点
+      // 1. 只进行一次打点操作
       if (Cesium.defined(this.drawEntity)) {
         viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
         return 
       }
 
+      // 2. 获取点击的位置，在地图上添加案件登记点
       let cartesian = viewer.camera.pickEllipsoid(e.position, viewer.scene.globe.ellipsoid)
       this.drawEntity = this.addPoint(cartesian)
 
       this.$el.style.cursor = 'default'
 
-      // TODO：弹出地址确认框
-      // TODO: 使用天地图api查询该点对应的地址 http://lbs.tianditu.gov.cn/server/geocodinginterface.html
+      // 3. 弹出地址确认框
       this.confirmVisible = true
-      let lnglat = this.cartesian2Wgs84(cartesian)
+      let lnglat = this.cartesian2Wgs84(cartesian) 
       this.confirmLnglat = lnglat // cgcs2000坐标
+      // 3.1. 查询所属机构（高德坐标）
       this.confirmLnglatGd = this.wgs84togcj02(lnglat.lng, lnglat.lat) // 高德坐标
       this.getOrg(this.confirmLnglatGd)
+      // 3.2. 查询结构化地址（cgcs2000，天地图api）
       this.$get(`http://api.tianditu.gov.cn/geocoder?postStr={'lon':${lnglat.lng},'lat':${lnglat.lat},'ver':1}&type=geocode&tk=76892c38deab957e65556e5824ca53e9`)
         .then( res => {
           if (res.status == '0' && res.result) {
             this.confirmAddress = res.result.formatted_address
           } 
+          // 3.3. 为案件登记点添加事件，使其可以拖拽并更新地址确认框中的内容
           this.movePoint()
         })
     },
@@ -1971,7 +2067,7 @@ export default {
       return viewer.entities.add(option)
     },
     /**
-     * @description: 登记案件--点可拖拽
+     * @description: 登记案件--点可拖拽，并更新地址确认框中内容--所属机构、结构化地址
      * @param {type} 
      * @return: 
      */
@@ -1982,18 +2078,21 @@ export default {
       
       this.handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas)
       
+      // 1. 添加 鼠标按下 事件
       this.handler.setInputAction( e => {
         this.$el.style.cursor = 'move'
+        // 1.1. 获取待拖拽的登记点，对鼠标按下进行标识
         pointDraged = viewer.scene.pick(e.position)
         leftDownDrag = true
+        // 1.2. 获取到登记点后，暂停视图的旋转/移动事件
         if (!pointDraged) return
         if (pointDraged.id && pointDraged.id.name === '登记点') {
           this.viewer.scene.mode === Cesium.SceneMode.SCENE3D ? viewer.scene.screenSpaceCameraController.enableRotate = false :
                                                                 viewer.scene.screenSpaceCameraController.enableTranslate = false
-          
         }
       }, Cesium.ScreenSpaceEventType.LEFT_DOWN)
 
+      // 2. 添加 鼠标移动 事件--根据鼠标位置更新登记点的位置
       this.handler.setInputAction( e => {
         if (leftDownDrag === true && pointDraged != null) {
           let ray = viewer.camera.getPickRay(e.endPosition)
@@ -2004,41 +2103,52 @@ export default {
         }
       }, Cesium.ScreenSpaceEventType.MOUSE_MOVE)
 
+      // 3. 添加 鼠标释放 事件
       this.handler.setInputAction( () => {
+        // 3.1. 光标恢复为默认样式
         this.$el.style.cursor = 'default'
         if (!pointDraged) return
+
+        // 3.2. 获取拖拽后的登记点坐标
         let lnglat = this.cartesian2Wgs84(pointDraged.id.position.getValue())
-        this.confirmLnglatGd = this.gcj02towgs84(lnglat.lng, lnglat.lat) // 高德坐标
+        // 3.3. 更新【地址确认框】的所属机构（高德坐标）
+        this.confirmLnglatGd = this.wgs84togcj02(lnglat.lng, lnglat.lat)
         this.getOrg(this.confirmLnglatGd)
+        // 3.4. 更新【地址确认框】的结构化地址（cgcs2000，天地图api）
         this.$get(`http://api.tianditu.gov.cn/geocoder?postStr={'lon':${lnglat.lng},'lat':${lnglat.lat},'ver':1}&type=geocode&tk=76892c38deab957e65556e5824ca53e9`)
           .then( res => {
             if (res.status == '0' && res.result) {
             this.confirmAddress = res.result.formatted_address
             } 
           })
+        // 3.5. 标识鼠标按下事件为false
         leftDownDrag = false
         pointDraged = null
+        // 3.6. 恢复视图的旋转/移动事件
         this.viewer.scene.mode === Cesium.SceneMode.SCENE3D ? viewer.scene.screenSpaceCameraController.enableRotate = true :
                                                               viewer.scene.screenSpaceCameraController.enableTranslate = true
-        // this.handler.destroy()
       }, Cesium.ScreenSpaceEventType.LEFT_UP)
 
       
     },
     /**
-     * @description: 登记案件--地址查询（位置-->经纬度）
+     * @description: 登记案件--地址反查（结构化地址-->经纬度）
      * @param {type} 
      * @return: 
      */
     search () {
       const viewer = this.viewer
+      // 结构化地址-->经纬度（天地图api）
       this.$get(`http://api.tianditu.gov.cn/geocoder?ds={"keyWord":"郑州市${this.confirmAddress}"}&tk=76892c38deab957e65556e5824ca53e9`)
         .then( res => {
           if (res.status == 0 && res.location) {
-            let cartesian = Cesium.Cartesian3.fromDegrees(res.location.lon, res.location.lat)
+            // 1. 移除登记点
             viewer.entities.remove(this.drawEntity)
+            // 2. 添加新的登记点
+            let cartesian = Cesium.Cartesian3.fromDegrees(res.location.lon, res.location.lat)
             this.drawEntity = this.addPoint(cartesian)
             viewer.zoomTo([this.drawEntity])
+            // 3. 更新【地址确认框】的所属机构（高德坐标）
             this.confirmLnglatGd = this.wgs84togcj02(lnglat.lng, lnglat.lat) // 高德坐标
             this.getOrg(this.confirmLnglatGd)
           } else {
@@ -2050,32 +2160,33 @@ export default {
         })
     },
     /**
-     * @description: 登记案件--地址确认
+     * @description: 登记案件--【地址确认框】的地址确认
      * @param {type} 
      * @return: 
      */
     comfirmRegister () {
       const viewer = this.viewer
-      this.confirmVisible = false // 打包时显示
+      // this.confirmVisible = false // 打包时显示
       // this.viewer.entities.remove(this.drawEntity) 
       // this.drawEntity = undefined 
 
-      window.parent.popHome.updateCaseAddress({ // 打包时显示
-          address: this.confirmAddress,
-          latitude: this.confirmLnglatGd[0],
-          longitude: this.confirmLnglatGd[1]
-        }, this.org.data)
+      // window.parent.popHome.updateCaseAddress({ // 打包时显示
+      //     address: this.confirmAddress,
+      //     latitude: this.confirmLnglatGd[0],
+      //     longitude: this.confirmLnglatGd[1]
+      //   }, this.org.data)
 
-      // 移除 drawEntity 的拖动事件
+      // 1. 移除 案件登记 的拖动事件
       if (this.handler) {
         this.handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOWN)
         this.handler.removeInputAction(Cesium.ScreenSpaceEventType.MOUSE_MOVE)
         this.handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_UP)
       }
       
-      // 移除 上报案件的 点击事件
+      // 2. 移除 案件登记 的点击事件
       viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
 
+      // 3. 恢复全局的单击事件
       this.scenePick()
     },
     /**
@@ -2085,11 +2196,11 @@ export default {
      */
     cancleRegister () {
       const viewer = this.viewer
-      // 移除drawEntity
+      // 1. 移除 登记点
       viewer.entities.remove(this.drawEntity)
       this.drawEntity = undefined
       
-      // 地址确认框取消
+      // 2. 隐藏 地址确认框，移除 案件登记 的拖动事件
       this.confirmVisible = false
       if (this.handler) {
         this.handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOWN)
@@ -2097,13 +2208,13 @@ export default {
         this.handler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_UP)
       }
 
-      // 移除 上报案件的 点击事件
+      // 3. 移除 案件登记的 点击事件
       viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
 
       this.scenePick()
     },
     /**
-     * @description: 登记案件--删除点
+     * @description: 登记案件--【地址确认框】中的删除点操作
      * @param {type} 
      * @return: 
      */
@@ -2112,7 +2223,7 @@ export default {
       this.drawEntity = undefined
     },
     /**
-     * @description: 获取点的机构代码
+     * @description: 获取点的机构代码（点需为高德坐标）
      * @param {type} 
      * @return: 
      */
@@ -2141,18 +2252,26 @@ export default {
         })
       })
     },
-    
+    /**
+     * 父级页面--播放视频
+     */
     showVideo (id) {
       window.parent.popHome.getVideoInfo(id) // 打包时显示
     },
+    /**
+     * 车辆轨迹开始时间改变
+     */
     carStartTimeChange (val) {
       this.carStartTime && this.getTips(this.carStartTime, this.carEndTime)
     },
+    /**
+     * 车辆轨迹结束时间改变
+     */
     carEndTimeChange (val) {
       this.carEndTime && this.getTips(this.carStartTime, this.carEndTime)
     },
     /**
-     * @description: 请求历史轨迹数据
+     * @description: 车辆--请求历史轨迹数据
      * @param {type} 
      * @return: 
      */
@@ -2161,93 +2280,103 @@ export default {
       return new Promise((resolve, reject) => {
         this.$thirdUrl(thirdUrlKey, '/car/history/track', url => {
           this.$post(url, param, (res) => {
-            if (res.data) { // 完善
-              resolve(res.data)
-            } else {
+            if (res.code === 0 && res.data && res.data.length <= 0) { 
               reject(res.data && res.data.message || res.msg)
+            } else {
+              resolve(res.data)
             }
           })
         })
       })
     },
+    /**
+     * @description: 车辆--历史轨迹查询
+     * @param {*} id
+     * @return {*}
+     */
     carTrack (id) {
+      // 1. 隐藏的info框，显示车辆轨迹查询界面
       this.infoBoxVisible = false
       this.carTrackVisible = true
-      // 初始化时间
+      // 2. 初始化轨迹查询条件：开始时间、结束时间
       this.carEndTime = new Date()
-      console.log(this.carEndTime)
       const times = this.carEndTime.getTime() - 24 * 60 * 60 * 1000
       this.carStartTime = new Date(times) 
     },
-    // 车辆轨迹--根据选择日期查询轨迹并显示
+    /**
+     * @description: 车辆轨迹--根据选择日期查询轨迹并显示
+     * @param {*}
+     * @return {*}
+     */
     carTrackShow () {
       const viewer = this.viewer
       this.carInfoVisible = false
-      this.carTrackVisible = false // 打包时显示
+      // this.carTrackVisible = false // 打包时显示
       
-      // 判断输入时间和结束时间是否正确
+      // 1. 判断输入时间和结束时间是否正确
       if (!this.carStartTime || !this.carEndTime) {
         this.$message('开始时间和结束时间都不能为空')
         return
       }
-      // this.currentCar = this.selectEntity.property.cid
+      // 2. 根据查询条件，获取车辆轨迹数据
       let param = { start_time: this.carStartTime.getTime(),
                     end_time: this.carEndTime.getTime(),
                     car_number: this.currentCar }
       if (!this.getTips(this.carStartTime, this.carEndTime)) return
-      this.$thirdUrl('python_street_outer', '/car/history/track', url => {
-        this.$post(url, param).then(res => {
-          if (res.code == 0 && res.data && res.data.length <= 0) {
-            this.$message({ message: '暂无轨迹数据', type: 'error' })
-            return
-          } else {
-            let fullPath
-            viewer.entities.remove(viewer.entities.getById('CarFullPath'))
-            this.handleClose()
-            let path = res.data
-            let pathMove = []
-            let pathArr = []
-            for (let i=0; i < path.length; i++) {
-              let point = this.gcj02towgs84(path[i].longitude, path[i].latitude)
-              path[i].longitude = point[0]
-              path[i].latitude = point[1]
-              if (path[i].status.indexOf('记录仪速度')  !== -1) {
-                pathMove.push(path[i])
-                pathArr.push(Cesium.Cartesian3.fromDegrees(point[0], point[1]))
-              }
-            }
-            if (pathArr.length === 0) {
-              this.$message({ message: '车辆在该时段内未移动', type: 'warning'})
-              return
-            }
-            fullPath = this.viewer.entities.add({
-              name: "CarFullPath",
-              id: "CarFullPath",
-              polyline: {
-                show: true,
-                positions: pathArr,
-                material: Cesium.Color.fromCssColorString('#ff5816'),
-                width: 4,
-                clampToGround: true
-              }
-            })
-            this.carPathData = pathMove
-            viewer.zoomTo(fullPath)
-
-            // 仪表盘显示
-            window.parent.popHome.updateCarMeterStatus(true, this.selectEntity.property) // 打包时显示
+      this.requestCarTrack(param).then(res => {
+        // 2.1. 移除已有的车辆轨迹
+        viewer.entities.remove(viewer.entities.getById('CarFullPath'))
+        this.handleClose()
+        let fullPath, path_84 = [], path_84_Cartesian = []
+        let path = res // 高德坐标
+        // 2.2. 将轨迹点由高德坐标转化为wgs84坐标，计算84坐标对应的世界坐标cartesian3
+        for (let i=0; i < path.length; i++) {
+          let point = this.gcj02towgs84(path[i].longitude, path[i].latitude)
+          path[i].longitude = point[0]
+          path[i].latitude = point[1]
+          if (path[i].status.indexOf('记录仪速度')  !== -1) {
+            path_84.push(path[i])
+            path_84_Cartesian.push(Cesium.Cartesian3.fromDegrees(point[0], point[1]))
           }
-        })
-      })
+        }
+        // 2.3. 没有轨迹点，作出警告
+        if (path_84_Cartesian.length === 0) {
+          this.$message({ message: '车辆在该时段内未移动', type: 'warning'})
+          return
+        }
+        // 2.4. 贴地添加车辆轨迹
+        fullPath = this.viewer.entities.add({
+          name: "CarFullPath",
+          id: "CarFullPath",
+          polyline: {
+            show: true,
+            positions: path_84_Cartesian,
+            material: Cesium.Color.fromCssColorString('#ff5816'),
+            width: 4,
+            clampToGround: true
+          }
+        })
+        this.carPathData = path_84
+        viewer.zoomTo(fullPath)
+
+        // 仪表盘显示
+        // window.parent.popHome.updateCarMeterStatus(true, this.selectEntity.property) // 打包时显示
+      }).catch(() => {
+        this.$message({ message: '暂无轨迹数据', type: 'error' })
+      })
     },
-    // 车辆轨迹--开始播放
+    /**
+     * @description: 车辆轨迹--开始播放轨迹
+     */
     carPathPlay (speed) {
       const viewer = this.viewer
       
+      // 1. 计算轨迹播放的开始时间和结束时间
       let path = this.carPathData
-      let start = Cesium.JulianDate.fromDate(new Date(path[0].uploadTime))
-      let stop = Cesium.JulianDate.addSeconds(start, path.length, new Cesium.JulianDate())
+      let start = Cesium.JulianDate.fromDate(new Date(path[0].uploadTime)) // 轨迹数据开始的时间
+      let stop = Cesium.JulianDate.addSeconds(start, path.length, new Cesium.JulianDate()) 
       
+      // 2. 配置时钟参数
       viewer.clock.startTime = start.clone()
       viewer.clock.currentTime = start.clone()
       viewer.clock.stopTime = stop.clone()
@@ -2255,12 +2384,15 @@ export default {
       viewer.clock.clockRange = Cesium.ClockRange.CLAMPED
       viewer.timeline.zoomTo(start, stop)
       
+      // 3. 若当前轨迹正在播放，则重新播放
       let moveEntity 
       if (moveEntity = viewer.entities.getById("move-car")) {
         viewer.clock.currentTime = start.clone()
         this.animationControl("forward")
         return
       }
+
+      // 4. 创建可移动的车辆实体
       let positionProperty = new Cesium.SampledPositionProperty()
       let speedProperty = new Cesium.SampledProperty(Number)
       let directionProperty = new Cesium.SampledProperty(Number)
@@ -2298,20 +2430,19 @@ export default {
           // distance: distanceProperty
         })
       })
-      
-      // viewer.trackedEntity = moveEntity
+      // 5. 开始移动
       this.animationControl('forward')
 
+      // 6. 显示车辆的已走路径
       let passPath = []
       let previousTime = moveEntity.position.getValue(viewer.clock.currentTime)
       passPath.push(Cesium.Cartesian3.fromDegrees(path[0].longitude, path[0].latitude))
       let _this = this
-      let passLineEntity = viewer.entities.add({
+      viewer.entities.add({
         id: 'CarPassPath',
         polyline: {
           show: true,
-          positions: new Cesium.CallbackProperty( (time, result) => {
-            // 实时更新车的已走路径
+          positions: new Cesium.CallbackProperty( (time) => {
             let floatCartesian = moveEntity.position.getValue(time)
             _this.playFlag = true
             if (time.secondsOfDay >= previousTime.secondsOfDay) {
@@ -2342,110 +2473,119 @@ export default {
         }
       })
       
+      // 添加帧监听事件，以得到实时的速度、方向
       viewer.scene.postRender.addEventListener( () => {
-        
-        // // 实时更新车的已走路径 ================= 未完成
-        // let currentTime = viewer.clock.currentTime.secondsOfDay
-        // let floatCartesian = moveEntity.position.getValue(currentTime)
-        // console.log(currentTime)
-        // if (currentTime >= previousTime) {
-        //   if (floatCartesian) {
-        //     passPath.push(floatCartesian)
-        //   } else {
-        //     passPath = []
-        //     passPath.push(Cesium.Cartesian3.fromDegrees(path[0].longitude, path[0].latitude))
-        //   }
-        // } else {
-        //   if (passPath.length >= 1) {
-        //     passPath.splice(passPath.length-1, 1)
-        //   } else {
-        //     passPath = []
-        //   }
-        // }
-        // previousTime = currentTime
-        // passLineEntity.polyline.positions = passPath
-        
         // 得到实时的车速、车的方向
         let carSpeed = moveEntity.properties.speed.getValue(viewer.clock.currentTime)
         let carDirection = moveEntity.properties.direction.getValue(viewer.clock.currentTime)
         // let carDistance =  moveEntity.properties.distance.getValue(currentTime).toFixed(2)
         // 向父页面传递车速、方向
-        window.parent.popHome.updateCarMeterInfo(carSpeed, carDirection) // 打包时显示
-        // let carMoveInfoBox = this.$el.getElementsByClassName('carMoveInfoBox')[0]
-        // carMoveInfoBox.style.display = "block"
-        // let cartesian =  moveEntity.position.getValue(currentTime)
-        // let wp = Cesium.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, cartesian)
-        // carMoveInfoBox.style.left = wp.x + "px"
-        // carMoveInfoBox.style.top = wp.y + "px"
-        // carMoveInfoBox.textContent = `速度：${carSpeed}, 方向：${carDirection}, 行驶里程：${carDistance}`
+        // window.parent.popHome.updateCarMeterInfo(carSpeed, carDirection) // 打包时显示
+        
+        /* 简易的车辆实时速度、方向显示框
+        let carMoveInfoBox = this.$el.getElementsByClassName('carMoveInfoBox')[0]
+        carMoveInfoBox.style.display = "block"
+        let cartesian =  moveEntity.position.getValue(currentTime)
+        let wp = Cesium.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, cartesian)
+        carMoveInfoBox.style.left = wp.x + "px"
+        carMoveInfoBox.style.top = wp.y + "px"
+        carMoveInfoBox.textContent = `速度：${carSpeed}, 方向：${carDirection}, 行驶里程：${carDistance}`
+        */
       })
       
     },
-    // 车辆轨迹--改变速度重新播放
+    /**
+     * @description: 车辆轨迹--改变速度重新播放
+     * @param {*}
+     * @return {*}
+     */
     carChangeSpeed (speed) {
       const viewer = this.viewer
-      // 停止当前播放
       if (this.playFlag) {
+        // 停止当前播放，改变速度重新开始播放
         this.handleClose('replay')
-        // 重新开始播放
         this.carPathPlay(speed)
       } else {
         this.carPathPlay()
       }
     },
-    // 车辆轨迹--重新播放
+    /**
+     * @description: 车辆轨迹--重新播放
+     * @param {*}
+     * @return {*}
+     */
     carPathReplay () {
       const viewer = this.viewer
-      // 停止当前播放
       if (this.playFlag) {
         this.handleClose('replay')
-        // 重新开始播放
+        // 停止当前播放，重新开始播放
         this.carPathPlay()
       } else {
         this.carPathPlay()
       }
     },
-    // 车辆轨迹--退出播放
+    /**
+     * 车辆轨迹--退出播放
+     */
     carTrackExit () {
       this.handleClose()
       this.viewer.scene.camera.setView(this.homeViewOptions)
     },
+    /**
+     * 轨迹--播放控制
+     */
     animationControl (action) {
       let viewer = this.viewer
       let viewModel = viewer.animation.viewModel
       let command
-      if (action === "reverse") { //反向播放
+      if (action === "reverse") { // 反向播放
         command = viewModel.playReverseViewModel.command
-      } else if (action === "pause"){ //暂停
+      } else if (action === "pause"){ // 暂停
         command = viewModel.pauseViewModel.command
-      } else if (action === "forward") { //播放
+      } else if (action === "forward") { // 正向播放
         command = viewModel.playForwardViewModel.command
-      } else if (action === "faster") { //加快速度
+      } else if (action === "faster") { // 加快速度
         command = viewModel.faster
-      } else if (action === 'slower') { //放慢速度
+      } else if (action === 'slower') { // 放慢速度
         command = viewModel.slower
       }
       if (command.canExecute) {
         command()
       }
     },
+    /**
+     * @description: 轨迹--向前加速
+     * @param {*}
+     * @return {*}
+     */
     fastForward () {
       this.animationControl('forward')
       this.animationControl('faster')
     },
+    /**
+     * @description: 轨迹--反向运动
+     * @param {*}
+     * @return {*}
+     */
     fastBack () {
       this.animationControl('reverse')
-      // this.animationControl('faster')
     },
+    /**
+     * @description: 轨迹--停止播放、移除轨迹、运动物体
+     * @param {*} flag 标识是否是 replay （重新播放）：true（重新播放）, false(第一次播放)
+     * @return {*}
+     */
     handleClose (flag) {
       const viewer = this.viewer
       if (viewer.entities) {
-        
+        // 1. 获取当前场景中与轨迹相关的实体Id
         const entityIds = flag === 'replay' ? 
                           ['move-person','PersonPassPath', 'move-car', 'CarPassPath'] :
                           ['PersonFullPath', 'move-person','PersonPassPath', 'CarFullPath', 'move-car', 'CarPassPath']
         entityIds.forEach( item => {
+          // 2. 获取实体
           let entity = viewer.entities.getById(item)
+          // 3. 实体存在：停止播放、移除实体
           if (entity) {
             this.animationControl("pause")
             viewer.entities.remove(entity)
@@ -2454,74 +2594,93 @@ export default {
         })
       }
     },
+    /**
+     * @description: 人员--历史轨迹查询
+     * @param {*}
+     * @return {*}
+     */
     personTrack () {
+      // 1. 隐藏的info框，显示车辆轨迹查询界面
       this.infoBoxVisible=false;
       this.personTrackVisible = true
+      // 2. 初始化人员轨迹查询条件：开始时间、结束时间
       const times = this.personEndTime.getTime() - 24 * 60 * 60 * 1000
       this.personStartTime = new Date(times)
     },
+    /**
+     * @description: 父级页面--通话
+     * @param {*}
+     * @return {*}
+     */
     personCall () {
       window.parent.popHome.beginCall(this.selectEntity.property) // 打包时显示
     },
+    /**
+     * @description: 人员轨迹--根据选择日期查询轨迹并显示
+     * @param {*}
+     * @return {*}
+     */
     personTrackShow () {
       this.infoBoxVisible = false
       const viewer = this.viewer
 
       this.handleClose()
-      // 判断输入时间和结束时间是否正确
+
+      // 1. 判断输入时间和结束时间是否正确
       if (!this.personStartTime || !this.personEndTime) {
         this.$message('开始时间和结束时间都不能为空')
         return
       }
 
+      // 2. 根据查询条件，获取人员轨迹数据
       if (!this.getTips(this.personStartTime, this.personEndTime)) return
       let param = { start_time: this.formatTime(this.personStartTime),
                     end_time: this.formatTime(this.personEndTime), 
                     device_id: this.currentPerson,
                     device_type: 'card'}
-      // this.$thirdUrl('python_street_outer', 'about_duty/history/track', url => {
-        this.$post('http://192.168.1.180:8021/watch/gps/now', param).then(res => {
-          let fullPath
-          if (res.code === 0 && res.data && res.data.length <= 0) {
-            this.$message({ message: '暂无轨迹数据', type: 'error' })
-            return
-          } else {
-            if ( Cesium.defined(viewer.entities) && (fullPath = viewer.entities.getById('PersonFullPath'))) {
-              return
-            }
-            let path = res.data // 高德坐标
-            let pathArr = []
-            for (let i=0; i < path.length; i++) {
-              path[i].lon_lat = this.gcj02towgs84(path[i].lon_lat[0], path[i].lon_lat[1])
-              pathArr.push(Cesium.Cartesian3.fromDegrees(path[i].lon_lat[0], path[i].lon_lat[1]))
-            }
-            
-            fullPath = viewer.entities.add({
-              name: "PersonFullPath",
-              id: "PersonFullPath",
-              polyline: {
-                show: true,
-                positions: pathArr,
-                material: Cesium.Color.fromCssColorString('#ff5816'),
-                width: 4,
-                clampToGround: true
-              }
-            })
-            viewer.zoomTo(fullPath)
-            this.personPathData = path
+      this.requestPersonTrack(param).then(res => {
+        if (Cesium.defined(viewer.entities) && (fullPath = viewer.entities.getById('PersonFullPath'))) {
+          return
+        }
+        let fullPath, path_84 = []
+        let path = res // 高德坐标
+        // 2.1. 将轨迹点由高德坐标转化为wgs84坐标，计算84坐标对应的世界坐标cartesian3
+        for (let i=0; i < path.length; i++) {
+          path[i].lon_lat = this.gcj02towgs84(path[i].lon_lat[0], path[i].lon_lat[1])
+          path_84.push(Cesium.Cartesian3.fromDegrees(path[i].lon_lat[0], path[i].lon_lat[1]))
+        }
+        // 2.2. 贴地添加人员轨迹
+        fullPath = viewer.entities.add({
+          name: "PersonFullPath",
+          id: "PersonFullPath",
+          polyline: {
+            show: true,
+            positions: pathArr,
+            material: Cesium.Color.fromCssColorString('#ff5816'),
+            width: 4,
+            clampToGround: true
           }
         })
-      // })
+        viewer.zoomTo(fullPath)
+        this.personPathData = path
+      }).catch(() => {
+        this.$message({ message: '暂无轨迹数据', type: 'error' })
+      })
     },
+    /**
+     * @description: 人员轨迹--开始播放轨迹
+     * @param {*} speed
+     * @return {*}
+     */
     personTrackPlay (speed) {
       const viewer = this.viewer
       
+      // 1. 计算轨迹播放的开始时间和结束时间
       let path = this.personPathData
       let start = Cesium.JulianDate.fromDate(new Date(path[0].gps_time))
       let stop = Cesium.JulianDate.addSeconds(start, path.length, new Cesium.JulianDate())
-      // let stop = Cesium.JulianDate.fromDate(new Date(path[path.length-1].gps_time))
-      
 
+      // 2. 配置时钟参数
       viewer.clock.startTime = start.clone()
       viewer.clock.currentTime = start.clone()
       viewer.clock.stopTime = stop.clone()
@@ -2529,6 +2688,7 @@ export default {
       viewer.clock.clockRange = Cesium.ClockRange.CLAMPED
       viewer.timeline.zoomTo(start, stop)
 
+      // 3. 若当前轨迹正在播放，则重新播放
       let moveEntity
       if (moveEntity = viewer.entities.getById("move-person")) {
         viewer.clock.currentTime = start.clone()
@@ -2536,9 +2696,9 @@ export default {
         return
       }
       
+      // 4. 创建可移动的人员实体
       let positionProperty = new Cesium.SampledPositionProperty()
       for (let i = 0; i< path.length; i++) {
-        // let time = Cesium.JulianDate.fromDate(new Date(path[i].gps_time))
         let time =  Cesium.JulianDate.addSeconds(start, i, new Cesium.JulianDate())
         let position = Cesium.Cartesian3.fromDegrees(path[i].lon_lat[0], path[i].lon_lat[1])
         positionProperty.addSample(time, position)
@@ -2549,7 +2709,6 @@ export default {
         interpolationAlgorithm: Cesium.LagrangePolynomialApproximation
       })
 
-      console.log(man)
       moveEntity = viewer.entities.add({
         name: 'move-person',
         id: 'move-person',
@@ -2576,9 +2735,10 @@ export default {
         }
       })
       
-      // viewer.trackedEntity = moveEntity
+      // 5. 开始移动
       this.animationControl("forward")
       
+      // 6. 显示车辆的已走路径
       let passPath = []
       passPath.push(Cesium.Cartesian3.fromDegrees(path[0].lon_lat[0], path[0].lon_lat[1]))
       let passLineEntity = viewer.entities.add({
@@ -2590,7 +2750,6 @@ export default {
             if (floatCartesian) {
               passPath.push(floatCartesian)
             } else {
-              // currentTime = start.clone()
               passPath = []
               passPath.push(Cesium.Cartesian3.fromDegrees(path[0].lon_lat[0], path[0].lon_lat[1]))
             }
@@ -2602,24 +2761,37 @@ export default {
         }
       })
     },
+    /**
+     * @description: 人员--请求历史轨迹数据
+     * @param {*} param Object
+     * @return {*}
+     */
     requestPersonTrack (param) {
       param.device_id = this.currentPersonnelData.id
+      let url = "http://192.168.1.180:8021/watch/gps/now"
       return new Promise((resolve, reject) => {
-        this.$thirdUrl('attenceWatch_outer', '/extend/about_duty/history/track', url => {
-          this.$post(url, param, (res) => {
-            if (res.data) {
-              const points = this.formatData(res.data)
-              resolve(points)
-            } else {
-              reject(res.data.message)
-            }
-          })
+        this.$post(url, param, (res) => {
+          if (res.code === 0 && res.data && res.data.length <= 0) {
+            reject(res.data.message)
+          } else {
+            resolve(res.data)
+          }
         })
       })
     },
+    /**
+     * @description: 人员轨迹开始时间改变
+     * @param {*} val
+     * @return {*}
+     */
     personStartTimeChange (val) {
       this.personStartTime && this.getTips(this.personStartTime, this.personEndTime)
     },
+    /**
+     * @description: 人员轨迹结束时间改变
+     * @param {*} val
+     * @return {*}
+     */
     personEndTimeChange (val) {
       this.personEndTime && this.getTips(this.personStartTime, this.personEndTime)
     },
@@ -2630,9 +2802,12 @@ export default {
      */
     toHomeView () {
       this.$el.style.cursor = 'default'
+      // 1.  停止全局单击事件并重新定义全局单击事件
       this.viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
       this.scenePick()
+      // 2. 切换到默认视角
       this.viewer.scene.camera.setView(this.homeViewOptions)
+      // 3. 移除地图上的所有图层及实体
       this.layer = undefined
       this.viewer.dataSources.removeAll()
       this.viewer.entities.removeAll()
@@ -2645,8 +2820,10 @@ export default {
      */
     toMainView () {
       this.$el.style.cursor = 'default'
+      // 1. 停止全局单击事件并重新定义全局单击事件
       this.viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_CLICK)
       this.scenePick()
+      // 2. 切换到主要视角
       this.viewer.scene.camera.setView({
         destination: Cesium.Cartesian3.fromDegrees(113.75996737452304, 34.797545852443754, 101.00276253205915),
         orientation: {
@@ -2656,18 +2833,35 @@ export default {
         },
         duration: 2
       })
+      // 3. 移除地图上的所有图层及实体
       this.layer = undefined
       this.viewer.dataSources.removeAll()
       this.viewer.entities.removeAll()
     },
+    /**
+     * @description: 车辆轨迹查询框关闭
+     * @param {*}
+     * @return {*}
+     */
     carTrackClose () {
       this.carTrackVisible = false
       this.handleClose()
     },
+    /**
+     * @description: 人员轨迹查询框关闭
+     * @param {*}
+     * @return {*}
+     */
     personTrackClose () {
       this.personTrackVisible = false
       this.handleClose()
     },
+    /**
+     * @description: 判断时间选择
+     * @param {*} startTime
+     * @param {*} endTime
+     * @return {*}
+     */
     getTips (startTime, endTime) {
       const secondesOfTwoDay = 24 * 60 * 60 * 1000 * 2 // 两天时间的毫秒数
       const dateDiff = endTime.getTime() - startTime.getTime();//时间差的毫秒数
@@ -2688,6 +2882,12 @@ export default {
       }
       return true
     },
+    /**
+     * @description: 时间格式化
+     * @param {*} time
+     * @param {*} notime
+     * @return {*}
+     */
     formatTime (time, notime) {
       if (time) {
         var date = new Date(time)
@@ -2721,9 +2921,9 @@ export default {
       return yy + '-' + MM + '-' + dd + ' ' +  hh + ':' + mm + ':' + ss
     },
     /**
-      * WGS84转GCj02
-      * @param lng
-      * @param lat
+      * WGS84 转 GCj02
+      * @param lng Number 经度
+      * @param lat Number 纬度
       * @returns {*[]}
     */
     wgs84togcj02 (lng, lat) {
@@ -2811,7 +3011,6 @@ export default {
         return '';
       }
     },
-
     /**
      * 获取单个数据详情
      */
@@ -2853,41 +3052,28 @@ export default {
             }
           })
         })
+      }else if (type === 'model_building') {
+        this.select.feature.detail = null
+        this.$post('/basicbuilding/tbasicBuilding/stringData', param).then( res => {
+          if (res.data && res.data.list && res.data.list.length > 0) {
+            this.select.feature.detail = res.data.list[0]
+            console.log(this.select.feature)
+            this.bindPromptVisible = false
+            this.infoBoxVisible = true
+          }else{
+            this.$message({
+              message: `未获取到详细信息，请绑定数据！`,
+              type: 'warning'
+            })
+            this.bindId = param.modelId
+            this.infoBoxVisible = false
+            this.bindPromptVisible = true
+          }
+        })
       }
     },
     changeSceneMode(mode){
       this.$refs.modeSwitch.dType = mode;
-    },
-    /**
-     * @description: 高德坐标、84坐标的对比
-     * @param {type} 
-     * @return: 
-     */
-    coordsCompare () {
-      const viewer = this.viewer
-      let gdPoint = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(113.815409, 34.78824),
-        point: {
-          pixelSize: 10,
-          color: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 1,
-          heightReference: Cesium.HeightReference.NONE
-        }
-      })
-      let wgs84Coord = this.gcj02towgs84(113.815409, 34.78824)
-      console.log(wgs84Coord)
-      let wgs84Point = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(wgs84Coord[0], wgs84Coord[1]),
-        point: {
-          pixelSize: 10,
-          color: Cesium.Color.RED,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 1,
-          heightReference: Cesium.HeightReference.NONE
-        }
-      })
-      viewer.zoomTo(gdPoint)
     },
     /**
      * @description: 关闭绑定提示框
@@ -2896,9 +3082,9 @@ export default {
      */
     closeBindPrompt () {
        this.bindPromptVisible = false
-      // 移除高亮的部件点的盒子
+      // 1. 移除高亮的部件点的盒子
       this.viewer.scene.primitives.remove(this.selectModelBox)
-      // 移除高亮的org、building的颜色
+      // 2. 移除高亮的org、building的颜色
       if (Cesium.defined(this.select.feature)) {
         let attributes = this.select.feature.primitive.getGeometryInstanceAttributes(this.select.feature.id)
         attributes.show = [0]
@@ -2961,7 +3147,7 @@ export default {
   position: absolute;
   left: 10px;
   top: 10px;
-  display: none;  /* 打包时显示 */
+  /* display: none;  打包时显示 */
 }
 .camera-info {
   position: absolute;
@@ -3025,7 +3211,7 @@ export default {
   margin: 10px 0;
 }
 .infobox-inner .key {
-  width: 80px;
+  width: 91px;
 }
 /* bind-box */
 .bindbox-outer {
